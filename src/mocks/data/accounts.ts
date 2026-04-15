@@ -1,0 +1,40 @@
+import type { BankAccount } from '@/types/account'
+
+export const mockAccounts: BankAccount[] = [
+  {
+    id: 'acc-001',
+    userId: 'user-customer-001',
+    name: 'Daily Banking',
+    iban: 'NL20BANK0123456789',
+    type: 'checking',
+    currency: 'EUR',
+    availableBalance: 8420.18,
+    ledgerBalance: 8420.18,
+    status: 'active',
+    updatedAt: '2026-04-15T08:00:00Z',
+  },
+  {
+    id: 'acc-002',
+    userId: 'user-customer-001',
+    name: 'Emergency Savings',
+    iban: 'NL91BANK9876543210',
+    type: 'savings',
+    currency: 'EUR',
+    availableBalance: 14500,
+    ledgerBalance: 14500,
+    status: 'active',
+    updatedAt: '2026-04-14T18:20:00Z',
+  },
+  {
+    id: 'acc-003',
+    userId: 'user-employee-001',
+    name: 'Operations Float',
+    iban: 'NL76BANK1111222233',
+    type: 'business',
+    currency: 'EUR',
+    availableBalance: 52950.4,
+    ledgerBalance: 54110.4,
+    status: 'review',
+    updatedAt: '2026-04-15T07:50:00Z',
+  },
+]

@@ -1,0 +1,42 @@
+import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
+
+import { services } from '@/services'
+import type { TransactionItem } from '@/types/transaction'
+import { toErrorMessage } from '@/utils/format'
+
+export const useTransactionStore = defineStore('transaction', () => {
+  const transactions = ref<TransactionItem[]>([])
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+
+  const recentTransactions = computed(() => transactions.value.slice(0, 5))
+
+  async function load(userId: string) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      transactions.value = await services.transaction.getTransactionsByUser(userId)
+    } catch (caughtError) {
+      error.value = toErrorMessage(caughtError)
+      throw caughtError
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function clear() {
+    transactions.value = []
+    error.value = null
+  }
+
+  return {
+    transactions,
+    recentTransactions,
+    isLoading,
+    error,
+    load,
+    clear,
+  }
+})
