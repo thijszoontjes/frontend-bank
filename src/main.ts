@@ -7,12 +7,16 @@ import { pinia } from './stores/index'
 import './styles/tokens.css'
 import './styles/base.css'
 
-const app = createApp(App)
+async function bootstrap() {
+  const app = createApp(App)
 
-app.use(pinia)
+  app.use(pinia)
 
-const authStore = useAuthStore(pinia)
-await authStore.hydrate()
+  const authStore = useAuthStore(pinia)
+  await authStore.hydrate()
 
-app.use(router)
-app.mount('#app')
+  app.use(router)
+  app.mount('#app')
+}
+
+void bootstrap()

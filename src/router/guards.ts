@@ -24,7 +24,7 @@ export function registerRouterGuards(router: Router) {
       }
     }
 
-    if (to.meta.roles?.length && authStore.role && !to.meta.roles.includes(authStore.role)) {
+    if (to.meta.roles?.length && (!authStore.role || !to.meta.roles.includes(authStore.role))) {
       return { name: 'dashboard' }
     }
 

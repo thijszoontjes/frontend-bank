@@ -151,7 +151,13 @@ onMounted(loadDashboard)
         </AppCard>
       </div>
 
-      <AppCard title="Recent activity" subtitle="This table is powered by the transaction store and reusable table component.">
+      <section class="page-section">
+        <div>
+          <h3 style="margin: 0; font-size: 1.15rem;">Recent activity</h3>
+          <p style="margin: 0.4rem 0 0; color: var(--color-text-muted);">
+            This table is powered by the transaction store and reusable table component.
+          </p>
+        </div>
         <EmptyState
           v-if="transactionStore.recentTransactions.length === 0"
           title="No activity yet"
@@ -176,7 +182,7 @@ onMounted(loadDashboard)
             <AppBadge :variant="statusVariant(String(value))">{{ value }}</AppBadge>
           </template>
         </AppTable>
-      </AppCard>
+      </section>
     </template>
   </div>
 </template>
