@@ -1,5 +1,6 @@
 import type { Router } from 'vue-router'
 
+import { resolveHomeRoute } from '@/router/session-home'
 import { useAuthStore } from '@/stores/auth'
 import { pinia } from '@/stores/index'
 
@@ -14,7 +15,7 @@ export function registerRouterGuards(router: Router) {
     }
 
     if (to.meta.guestOnly && authStore.isAuthenticated) {
-      return { name: 'dashboard' }
+      return resolveHomeRoute(authStore)
     }
 
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -24,8 +25,16 @@ export function registerRouterGuards(router: Router) {
       }
     }
 
+    if (to.meta.pendingOnly && !authStore.isPendingCustomer) {
+      return resolveHomeRoute(authStore)
+    }
+
+    if (authStore.isPendingCustomer && to.name !== 'pending') {
+      return { name: 'pending' }
+    }
+
     if (to.meta.roles?.length && (!authStore.role || !to.meta.roles.includes(authStore.role))) {
-      return { name: 'dashboard' }
+      return resolveHomeRoute(authStore)
     }
 
     document.title = to.meta.title ? `${to.meta.title} | ${APP_TITLE}` : APP_TITLE

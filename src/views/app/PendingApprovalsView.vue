@@ -1,60 +1,104 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 
-import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import AppTable from '@/components/ui/AppTable.vue'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import { useCurrency } from '@/composables/useCurrency'
 import { useApprovalStore } from '@/stores/approval'
-import { formatDateTime } from '@/utils/format'
+import type { ApprovalPayload } from '@/types/approval'
+import { formatDateTime, toErrorMessage } from '@/utils/format'
 
-const { formatCurrency } = useCurrency()
+interface LimitFormState {
+  checkingAbsolute: string
+  checkingDaily: string
+  savingsAbsolute: string
+  savingsDaily: string
+}
+
 const approvalStore = useApprovalStore()
-const activeId = ref<string | null>(null)
+const activeAction = ref<string | null>(null)
+const rowErrors = reactive<Record<string, string>>({})
+const limitForms = reactive<Record<string, LimitFormState>>({})
 
-const columns = [
-  { key: 'requester', label: 'Requester' },
-  { key: 'type', label: 'Type' },
-  { key: 'priority', label: 'Priority' },
-  { key: 'amount', label: 'Amount' },
-  { key: 'requestedAt', label: 'Requested' },
-  { key: 'actions', label: 'Actions' },
-]
-
-function priorityVariant(priority: string) {
-  if (priority === 'high') {
-    return 'danger'
+function ensureForm(userId: string) {
+  if (!limitForms[userId]) {
+    limitForms[userId] = {
+      checkingAbsolute: '-500',
+      checkingDaily: '1000',
+      savingsAbsolute: '0',
+      savingsDaily: '5000',
+    }
   }
 
-  if (priority === 'medium') {
-    return 'warning'
+  return limitForms[userId]
+}
+
+function buildPayload(userId: string): ApprovalPayload | null {
+  const form = ensureForm(userId)
+
+  const payload: ApprovalPayload = {
+    checkingAccount: {
+      absoluteLimit: Number(form.checkingAbsolute),
+      dailyLimit: Number(form.checkingDaily),
+    },
+    savingsAccount: {
+      absoluteLimit: Number(form.savingsAbsolute),
+      dailyLimit: Number(form.savingsDaily),
+    },
   }
 
-  return 'info'
+  const values = [
+    payload.checkingAccount.absoluteLimit,
+    payload.checkingAccount.dailyLimit,
+    payload.savingsAccount.absoluteLimit,
+    payload.savingsAccount.dailyLimit,
+  ]
+
+  if (values.some((value) => Number.isNaN(value))) {
+    rowErrors[userId] = 'Vul geldige numerieke limieten in voor beide accounts.'
+    return null
+  }
+
+  rowErrors[userId] = ''
+  return payload
 }
 
 async function loadApprovals() {
   await approvalStore.load()
+  approvalStore.approvals.forEach((approval) => ensureForm(approval.id))
 }
 
-async function handleApprove(id: string) {
-  activeId.value = id
+async function handleApprove(userId: string) {
+  const payload = buildPayload(userId)
+
+  if (!payload) {
+    return
+  }
+
+  activeAction.value = `${userId}:approve`
+
   try {
-    await approvalStore.approve(id)
+    await approvalStore.approve(userId, payload)
+  } catch (caughtError) {
+    rowErrors[userId] = toErrorMessage(caughtError)
   } finally {
-    activeId.value = null
+    activeAction.value = null
   }
 }
 
-async function handleReject(id: string) {
-  activeId.value = id
+async function handleReject(userId: string) {
+  rowErrors[userId] = ''
+  activeAction.value = `${userId}:reject`
+
   try {
-    await approvalStore.reject(id)
+    await approvalStore.reject(userId)
+  } catch (caughtError) {
+    rowErrors[userId] = toErrorMessage(caughtError)
   } finally {
-    activeId.value = null
+    activeAction.value = null
   }
 }
 
@@ -65,55 +109,98 @@ onMounted(loadApprovals)
   <div class="page-stack">
     <PageHeader
       title="Pending approvals"
-      description="This page demonstrates an employee-only route backed by a dedicated approval store and service."
-    />
+      description="Employee-overzicht voor nieuwe klanten. Bij approval stel je direct de checking- en savingslimieten in."
+    >
+      <template #actions>
+        <AppButton variant="secondary" @click="loadApprovals">Verversen</AppButton>
+      </template>
+    </PageHeader>
 
     <LoadingState
       v-if="approvalStore.isLoading && approvalStore.approvals.length === 0"
-      label="Collecting pending approvals..."
+      label="Pending klanten laden..."
     />
 
     <EmptyState
       v-else-if="approvalStore.approvals.length === 0"
-      title="No pending approvals"
-      description="Approvals disappear immediately after mock approval or rejection actions."
+      title="Geen pending registraties"
+      description="Nieuwe klanten verschijnen hier zodra ze zich registreren."
     />
 
-    <AppTable v-else :columns="columns" :rows="approvalStore.approvals as unknown as Record<string, unknown>[]">
-      <template #cell-requester="{ row }">
-        <div class="table-meta">
-          <strong>{{ row.requester }}</strong>
-          <span>{{ row.reason }}</span>
+    <template v-else>
+      <AppCard
+        v-for="approval in approvalStore.approvals"
+        :key="approval.id"
+        :title="`${approval.firstName} ${approval.lastName}`"
+        :subtitle="approval.reason"
+      >
+        <div class="grid-two">
+          <div class="stack-sm">
+            <div class="row-between">
+              <span>E-mail</span>
+              <strong>{{ approval.email }}</strong>
+            </div>
+            <div class="row-between">
+              <span>BSN</span>
+              <strong>{{ approval.bsn }}</strong>
+            </div>
+            <div class="row-between">
+              <span>Telefoon</span>
+              <strong>{{ approval.phoneNumber }}</strong>
+            </div>
+            <div class="row-between">
+              <span>Registratiedatum</span>
+              <strong>{{ approval.createdAt ? formatDateTime(approval.createdAt) : 'Onbekend' }}</strong>
+            </div>
+          </div>
+
+          <div class="stack-sm">
+            <div class="inline-form-row">
+              <AppInput
+                v-model="ensureForm(approval.id).checkingAbsolute"
+                label="Checking absolute limit"
+                placeholder="-500"
+              />
+              <AppInput
+                v-model="ensureForm(approval.id).checkingDaily"
+                label="Checking daily limit"
+                placeholder="1000"
+              />
+            </div>
+            <div class="inline-form-row">
+              <AppInput
+                v-model="ensureForm(approval.id).savingsAbsolute"
+                label="Savings absolute limit"
+                placeholder="0"
+              />
+              <AppInput
+                v-model="ensureForm(approval.id).savingsDaily"
+                label="Savings daily limit"
+                placeholder="5000"
+              />
+            </div>
+            <span v-if="rowErrors[approval.id]" class="input-error">{{ rowErrors[approval.id] }}</span>
+          </div>
         </div>
-      </template>
-      <template #cell-priority="{ value }">
-        <AppBadge :variant="priorityVariant(String(value))">{{ value }}</AppBadge>
-      </template>
-      <template #cell-amount="{ row }">
-        <strong>{{ formatCurrency(Number(row.amount), String(row.currency)) }}</strong>
-      </template>
-      <template #cell-requestedAt="{ value }">
-        {{ formatDateTime(String(value)) }}
-      </template>
-      <template #cell-actions="{ row }">
-        <div class="button-group">
-          <AppButton
-            size="sm"
-            :disabled="activeId === row.id"
-            @click="handleApprove(String(row.id))"
-          >
-            Approve
-          </AppButton>
-          <AppButton
-            variant="danger"
-            size="sm"
-            :disabled="activeId === row.id"
-            @click="handleReject(String(row.id))"
-          >
-            Reject
-          </AppButton>
-        </div>
-      </template>
-    </AppTable>
+
+        <template #actions>
+          <div class="button-group">
+            <AppButton
+              :disabled="activeAction === `${approval.id}:approve` || activeAction === `${approval.id}:reject`"
+              @click="handleApprove(approval.id)"
+            >
+              {{ activeAction === `${approval.id}:approve` ? 'Goedkeuren...' : 'Goedkeuren' }}
+            </AppButton>
+            <AppButton
+              variant="danger"
+              :disabled="activeAction === `${approval.id}:approve` || activeAction === `${approval.id}:reject`"
+              @click="handleReject(approval.id)"
+            >
+              {{ activeAction === `${approval.id}:reject` ? 'Afwijzen...' : 'Afwijzen' }}
+            </AppButton>
+          </div>
+        </template>
+      </AppCard>
+    </template>
   </div>
 </template>

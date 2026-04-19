@@ -8,6 +8,12 @@ export const authRoutes: RouteRecordRaw[] = [
     component: AuthLayout,
     children: [
       {
+        path: '',
+        redirect: {
+          name: 'login',
+        },
+      },
+      {
         path: 'login',
         name: 'login',
         component: () => import('@/views/auth/LoginView.vue'),
@@ -23,6 +29,16 @@ export const authRoutes: RouteRecordRaw[] = [
         meta: {
           title: 'Register',
           guestOnly: true,
+        },
+      },
+      {
+        path: 'pending',
+        name: 'pending',
+        component: () => import('@/views/auth/PendingApprovalView.vue'),
+        meta: {
+          title: 'Pending approval',
+          requiresAuth: true,
+          pendingOnly: true,
         },
       },
     ],

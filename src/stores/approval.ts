@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { services } from '@/services'
-import type { ApprovalItem } from '@/types/approval'
+import type { ApprovalItem, ApprovalPayload } from '@/types/approval'
 import { toErrorMessage } from '@/utils/format'
 
 export const useApprovalStore = defineStore('approval', () => {
@@ -26,14 +26,14 @@ export const useApprovalStore = defineStore('approval', () => {
     }
   }
 
-  async function approve(id: string) {
-    await services.approval.approveApproval(id)
-    approvals.value = approvals.value.filter((approval) => approval.id !== id)
+  async function approve(userId: string, payload: ApprovalPayload) {
+    await services.approval.approveApproval(userId, payload)
+    approvals.value = approvals.value.filter((approval) => approval.id !== userId)
   }
 
-  async function reject(id: string) {
-    await services.approval.rejectApproval(id)
-    approvals.value = approvals.value.filter((approval) => approval.id !== id)
+  async function reject(userId: string) {
+    await services.approval.rejectApproval(userId)
+    approvals.value = approvals.value.filter((approval) => approval.id !== userId)
   }
 
   function clear() {

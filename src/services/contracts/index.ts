@@ -1,13 +1,14 @@
-import type { ApprovalItem } from '@/types/approval'
+import type { ApprovalItem, ApprovalPayload } from '@/types/approval'
 import type { AccountSummary, BankAccount } from '@/types/account'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
 import type { TransactionItem } from '@/types/transaction'
+import type { UserProfile } from '@/types/user'
 
 export interface AuthService {
   login(payload: LoginPayload): Promise<AuthSession>
-  register(payload: RegisterPayload): Promise<AuthSession>
+  register(payload: RegisterPayload): Promise<UserProfile>
   logout(): Promise<void>
-  getCurrentSession(): Promise<AuthSession | null>
+  getCurrentUser(): Promise<UserProfile>
 }
 
 export interface AccountService {
@@ -21,8 +22,8 @@ export interface TransactionService {
 
 export interface ApprovalService {
   getPendingApprovals(): Promise<ApprovalItem[]>
-  approveApproval(id: string): Promise<ApprovalItem>
-  rejectApproval(id: string): Promise<ApprovalItem>
+  approveApproval(userId: string, payload: ApprovalPayload): Promise<void>
+  rejectApproval(userId: string): Promise<void>
 }
 
 export interface ServiceRegistry {

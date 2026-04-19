@@ -11,5 +11,6 @@ export function useCurrentUser() {
     isAuthenticated: computed(() => authStore.isAuthenticated),
     role: computed(() => authStore.role),
     isEmployee: computed(() => authStore.role === 'employee'),
+    isPendingCustomer: computed(() => authStore.isPendingCustomer),
   }
 }

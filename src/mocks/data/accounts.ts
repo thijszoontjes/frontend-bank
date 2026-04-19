@@ -3,7 +3,7 @@ import type { BankAccount } from '@/types/account'
 export const mockAccounts: BankAccount[] = [
   {
     id: 'acc-001',
-    userId: 'user-customer-001',
+    userId: 'user-customer-approved',
     name: 'Daily Banking',
     iban: 'NL20BANK0123456789',
     type: 'checking',
@@ -15,7 +15,7 @@ export const mockAccounts: BankAccount[] = [
   },
   {
     id: 'acc-002',
-    userId: 'user-customer-001',
+    userId: 'user-customer-approved',
     name: 'Emergency Savings',
     iban: 'NL91BANK9876543210',
     type: 'savings',

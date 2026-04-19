@@ -17,19 +17,27 @@ export function createMockApprovalService(): ApprovalService {
   return {
     async getPendingApprovals() {
       await simulateDelay()
-      return mockDb.approvals.filter((approval) => approval.status === 'pending')
+      return mockDb.approvals
     },
     async approveApproval(id: string) {
       await simulateDelay(200)
-      const approval = findApproval(id)
-      approval.status = 'approved'
-      return approval
+      findApproval(id)
+      const user = mockDb.users.find((entry) => entry.id === id)
+      if (user) {
+        user.approved = true
+        user.approvalStatus = 'approved'
+      }
+      mockDb.approvals = mockDb.approvals.filter((approval) => approval.id !== id)
     },
     async rejectApproval(id: string) {
       await simulateDelay(200)
-      const approval = findApproval(id)
-      approval.status = 'rejected'
-      return approval
+      findApproval(id)
+      const user = mockDb.users.find((entry) => entry.id === id)
+      if (user) {
+        user.approved = false
+        user.approvalStatus = 'rejected'
+      }
+      mockDb.approvals = mockDb.approvals.filter((approval) => approval.id !== id)
     },
   }
 }
