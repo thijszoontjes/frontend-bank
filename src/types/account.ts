@@ -20,3 +20,8 @@ export interface AccountSummary {
   accountsCount: number
   mainCurrency: string
 }
+
+export interface AccountPortfolio {
+  accounts: BankAccount[]
+  summary: AccountSummary
+}

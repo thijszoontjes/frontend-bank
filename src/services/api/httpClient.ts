@@ -6,6 +6,7 @@ export interface HttpClient {
   get<T>(path: string, init?: RequestInit): Promise<T>
   post<T>(path: string, body?: unknown, init?: RequestInit): Promise<T>
   patch<T>(path: string, body?: unknown, init?: RequestInit): Promise<T>
+  delete<T>(path: string, init?: RequestInit): Promise<T>
 }
 
 async function parseError(response: Response) {
@@ -69,6 +70,11 @@ export function createHttpClient(baseUrl: string): HttpClient {
         ...init,
         method: 'PATCH',
         body: body ? JSON.stringify(body) : undefined,
+      }),
+    delete: (path, init) =>
+      request(path, {
+        ...init,
+        method: 'DELETE',
       }),
   }
 }

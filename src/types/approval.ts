@@ -1,3 +1,5 @@
+import type { PageMetadata } from './common'
+
 export interface ApprovalItem {
   id: string
   firstName: string
@@ -17,4 +19,9 @@ export interface AccountConfigRequest {
 export interface ApprovalPayload {
   checkingAccount: AccountConfigRequest
   savingsAccount: AccountConfigRequest
+}
+
+export interface ApprovalListResult {
+  items: ApprovalItem[]
+  page: PageMetadata
 }

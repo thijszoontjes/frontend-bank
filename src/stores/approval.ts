@@ -3,21 +3,29 @@ import { defineStore } from 'pinia'
 
 import { services } from '@/services'
 import type { ApprovalItem, ApprovalPayload } from '@/types/approval'
+import type { PageMetadata } from '@/types/common'
 import { toErrorMessage } from '@/utils/format'
 
 export const useApprovalStore = defineStore('approval', () => {
   const approvals = ref<ApprovalItem[]>([])
+  const pagination = ref<PageMetadata | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const pendingCount = computed(() => approvals.value.length)
+  const pendingCount = computed(() => pagination.value?.totalElements ?? approvals.value.length)
+  const hasPreviousPage = computed(() => (pagination.value?.page ?? 0) > 0)
+  const hasNextPage = computed(() =>
+    pagination.value ? pagination.value.page + 1 < pagination.value.totalPages : false,
+  )
 
-  async function load() {
+  async function load(page = 0, size = 20) {
     isLoading.value = true
     error.value = null
 
     try {
-      approvals.value = await services.approval.getPendingApprovals()
+      const result = await services.approval.getPendingApprovals(page, size)
+      approvals.value = result.items
+      pagination.value = result.page
     } catch (caughtError) {
       error.value = toErrorMessage(caughtError)
       throw caughtError
@@ -38,12 +46,16 @@ export const useApprovalStore = defineStore('approval', () => {
 
   function clear() {
     approvals.value = []
+    pagination.value = null
     error.value = null
   }
 
   return {
     approvals,
+    pagination,
     pendingCount,
+    hasPreviousPage,
+    hasNextPage,
     isLoading,
     error,
     load,

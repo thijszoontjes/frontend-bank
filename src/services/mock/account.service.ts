@@ -18,13 +18,13 @@ function buildSummary(userId: string) {
 
 export function createMockAccountService(): AccountService {
   return {
-    async getAccountsByUser(userId: string) {
-      await simulateDelay()
-      return mockDb.accounts.filter((account) => account.userId === userId)
-    },
-    async getAccountSummary(userId: string) {
+    async getAccountPortfolio(userId: string) {
       await simulateDelay(180)
-      return buildSummary(userId)
+
+      return {
+        accounts: mockDb.accounts.filter((account) => account.userId === userId),
+        summary: buildSummary(userId),
+      }
     },
   }
 }

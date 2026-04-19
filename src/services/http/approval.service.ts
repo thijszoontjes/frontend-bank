@@ -15,22 +15,28 @@ interface PendingApprovalsResponse {
 
 export function createHttpApprovalService(client: HttpClient): ApprovalService {
   return {
-    async getPendingApprovals() {
-      const response = await client.get<PendingApprovalsResponse>('/users/pending-approval')
-      return response.items.map((item) => {
-        const user = mapUser(item.user)
+    async getPendingApprovals(page = 0, size = 20) {
+      const response = await client.get<PendingApprovalsResponse>(
+        `/users/pending-approval?page=${page}&size=${size}`,
+      )
 
-        return {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          bsn: user.bsn,
-          createdAt: user.createdAt,
-          reason: item.reason,
-        } satisfies ApprovalItem
-      })
+      return {
+        items: response.items.map((item) => {
+          const user = mapUser(item.user)
+
+          return {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            bsn: user.bsn,
+            createdAt: user.createdAt,
+            reason: item.reason,
+          } satisfies ApprovalItem
+        }),
+        page: response.page,
+      }
     },
     async approveApproval(userId, payload) {
       await client.post(`/users/${userId}/approval`, payload)

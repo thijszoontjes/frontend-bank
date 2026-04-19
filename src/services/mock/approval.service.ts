@@ -15,9 +15,20 @@ function findApproval(id: string) {
 
 export function createMockApprovalService(): ApprovalService {
   return {
-    async getPendingApprovals() {
+    async getPendingApprovals(page = 0, size = 20) {
       await simulateDelay()
-      return mockDb.approvals
+      const start = page * size
+      const items = mockDb.approvals.slice(start, start + size)
+
+      return {
+        items,
+        page: {
+          page,
+          size,
+          totalElements: mockDb.approvals.length,
+          totalPages: Math.max(1, Math.ceil(mockDb.approvals.length / size)),
+        },
+      }
     },
     async approveApproval(id: string) {
       await simulateDelay(200)

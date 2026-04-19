@@ -32,6 +32,7 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: {
           title: 'Accounts overview',
           requiresAuth: true,
+          roles: ['customer'],
         },
       },
       {
@@ -48,7 +49,7 @@ export const appRoutes: RouteRecordRaw[] = [
         name: 'approvals',
         component: () => import('@/views/app/PendingApprovalsView.vue'),
         meta: {
-          title: 'Pending approvals',
+          title: 'User management',
           requiresAuth: true,
           roles: ['employee'],
         },

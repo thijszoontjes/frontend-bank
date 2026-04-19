@@ -51,12 +51,24 @@ onMounted(loadAccounts)
   <div class="page-stack">
     <PageHeader
       title="Accounts overview"
-      description="Dedicated account state lives in its own store, keeping the page focused on presentation."
+      description="Persoonlijke accountinformatie, bankrekeningen en balances van de ingelogde klant."
     />
 
     <LoadingState v-if="accountStore.isLoading && accountStore.accounts.length === 0" label="Loading account portfolio..." />
 
     <template v-else>
+      <div class="grid-three" v-if="accountStore.summary">
+        <AppCard title="Total balance">
+          <p class="metric-value">{{ formatCurrency(accountStore.summary.totalBalance) }}</p>
+        </AppCard>
+        <AppCard title="Available balance">
+          <p class="metric-value">{{ formatCurrency(accountStore.summary.liquidBalance) }}</p>
+        </AppCard>
+        <AppCard title="Accounts">
+          <p class="metric-value">{{ accountStore.summary.accountsCount }}</p>
+        </AppCard>
+      </div>
+
       <EmptyState
         v-if="accountStore.accounts.length === 0"
         title="No accounts available"

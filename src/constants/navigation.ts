@@ -17,6 +17,7 @@ export const navigationItems: NavigationItem[] = [
     label: 'Accounts',
     shortLabel: 'AC',
     to: '/accounts',
+    roles: ['customer'],
   },
   {
     label: 'Transactions',
@@ -24,8 +25,8 @@ export const navigationItems: NavigationItem[] = [
     to: '/transactions',
   },
   {
-    label: 'Pending approvals',
-    shortLabel: 'PA',
+    label: 'Users',
+    shortLabel: 'US',
     to: '/approvals',
     roles: ['employee'],
   },
