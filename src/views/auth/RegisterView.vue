@@ -27,7 +27,7 @@ async function handleSubmit() {
   localError.value = ''
 
   if (form.password !== passwordConfirmation.value) {
-    localError.value = 'De wachtwoorden komen niet overeen.'
+    localError.value = 'The passwords do not match.'
     return
   }
 
@@ -49,43 +49,43 @@ async function handleSubmit() {
 <template>
   <div class="page-stack">
     <AppCard
-      title="Registreren"
-      subtitle="Nieuwe klanten starten altijd zonder rekeningen en wachten daarna op employee approval."
+      title="Register"
+      subtitle="New customers always start without accounts and then wait for employee approval."
     >
       <form class="auth-form" @submit.prevent="handleSubmit">
         <div class="inline-form-row">
-          <AppInput v-model="form.firstName" label="Voornaam" placeholder="Thijs" />
-          <AppInput v-model="form.lastName" label="Achternaam" placeholder="Jansen" />
+          <AppInput v-model="form.firstName" label="First name" placeholder="Thijs" />
+          <AppInput v-model="form.lastName" label="Last name" placeholder="Jansen" />
         </div>
 
-        <AppInput v-model="form.email" label="E-mail" placeholder="thijs@example.com" />
+        <AppInput v-model="form.email" label="Email" placeholder="thijs@example.com" />
         <div class="inline-form-row">
-          <AppInput v-model="form.phoneNumber" label="Telefoonnummer" placeholder="+31612345678" />
+          <AppInput v-model="form.phoneNumber" label="Phone number" placeholder="+31612345678" />
           <AppInput
             v-model="form.bsn"
             label="BSN"
             placeholder="123456789"
-            hint="Verwacht 9 cijfers volgens de backend-validatie."
+            hint="Expected to contain 9 digits based on backend validation."
           />
         </div>
         <div class="inline-form-row">
-          <AppInput v-model="form.password" label="Wachtwoord" type="password" placeholder="Minimaal 8 tekens" />
+          <AppInput v-model="form.password" label="Password" type="password" placeholder="At least 8 characters" />
           <AppInput
             v-model="passwordConfirmation"
-            label="Herhaal wachtwoord"
+            label="Repeat password"
             type="password"
-            placeholder="Voer hetzelfde wachtwoord nogmaals in"
+            placeholder="Enter the same password again"
             :error="submitError"
           />
         </div>
 
         <div class="auth-utility">
-          <span>Na registratie log je in en kom je eerst op de pending-pagina terecht.</span>
-          <RouterLink class="text-link" to="/login">Terug naar login</RouterLink>
+          <span>After registering, you sign in and first arrive on the pending page.</span>
+          <RouterLink class="text-link" to="/login">Back to sign in</RouterLink>
         </div>
 
         <AppButton type="submit" :disabled="authStore.isLoading" block>
-          {{ authStore.isLoading ? 'Registratie wordt verstuurd...' : 'Registreren' }}
+          {{ authStore.isLoading ? 'Submitting registration...' : 'Register' }}
         </AppButton>
       </form>
     </AppCard>

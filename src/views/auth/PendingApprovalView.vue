@@ -42,8 +42,8 @@ async function handleLogout() {
 <template>
   <div class="page-stack">
     <AppCard
-      title="Aanvraag in behandeling"
-      subtitle="Je registratie is ontvangen. Een employee moet je account nog beoordelen voordat je bankrekeningen worden aangemaakt."
+      title="Application pending"
+      subtitle="Your registration has been received. An employee still needs to review your account before your bank accounts are created."
     >
       <div class="stack-sm">
         <div class="row-between">
@@ -51,36 +51,36 @@ async function handleLogout() {
           <AppBadge variant="warning">Pending approval</AppBadge>
         </div>
         <div class="row-between">
-          <span>Klant</span>
+          <span>Customer</span>
           <strong>{{ userStore.fullName }}</strong>
         </div>
         <div class="row-between">
-          <span>E-mail</span>
+          <span>Email</span>
           <strong>{{ authStore.user?.email }}</strong>
         </div>
         <div class="row-between">
-          <span>Volgende stap</span>
-          <strong>Employee approval met checking- en savingslimieten</strong>
+          <span>Next step</span>
+          <strong>Employee approval with checking and savings limits</strong>
         </div>
       </div>
     </AppCard>
 
     <AppCard
-      title="Wat je nu wel kunt doen"
-      subtitle="Je mag al inloggen, maar normale customer-functionaliteit blijft geblokkeerd totdat je bent goedgekeurd."
+      title="What you can do now"
+      subtitle="You can already sign in, but normal customer functionality remains blocked until you are approved."
     >
       <div class="stack-sm">
-        <span>Vraag de employee om je registratie te beoordelen.</span>
-        <span>Gebruik daarna `Status opnieuw controleren` om je sessie te verversen.</span>
+        <span>Ask an employee to review your registration.</span>
+        <span>Then use `Check status again` to refresh your session.</span>
         <span v-if="refreshError" class="input-error">{{ refreshError }}</span>
       </div>
 
       <template #actions>
         <div class="button-group">
           <AppButton variant="secondary" :disabled="isRefreshing" @click="handleRefresh">
-            {{ isRefreshing ? 'Controleren...' : 'Status opnieuw controleren' }}
+            {{ isRefreshing ? 'Checking...' : 'Check status again' }}
           </AppButton>
-          <AppButton variant="ghost" @click="handleLogout">Uitloggen</AppButton>
+          <AppButton variant="ghost" @click="handleLogout">Log out</AppButton>
         </div>
       </template>
     </AppCard>

@@ -39,17 +39,17 @@ function buildPayload(): EmployeeCreateCustomerPayload | null {
     !form.password ||
     !form.bsn.trim()
   ) {
-    error.value = 'Vul alle velden in.'
+    error.value = 'Fill in all fields.'
     return null
   }
 
   if (!/^\d{9}$/.test(form.bsn.trim())) {
-    error.value = 'BSN moet uit precies 9 cijfers bestaan.'
+    error.value = 'BSN must contain exactly 9 digits.'
     return null
   }
 
   if (form.password.length < 8) {
-    error.value = 'Wachtwoord moet minimaal 8 tekens bevatten.'
+    error.value = 'Password must contain at least 8 characters.'
     return null
   }
 
@@ -78,7 +78,7 @@ function buildPayload(): EmployeeCreateCustomerPayload | null {
   ]
 
   if (values.some((value) => Number.isNaN(value))) {
-    error.value = 'Gebruik geldige numerieke limieten.'
+    error.value = 'Use valid numeric limits.'
     return null
   }
 
@@ -97,7 +97,7 @@ async function handleSubmit() {
 
   try {
     const user = await services.user.createCustomer(payload)
-    success.value = `${user.firstName} ${user.lastName} is aangemaakt.`
+    success.value = `${user.firstName} ${user.lastName} has been created.`
     await router.push({ name: 'users' })
   } catch (caughtError) {
     error.value = toErrorMessage(caughtError)
@@ -111,10 +111,10 @@ async function handleSubmit() {
   <div class="page-stack">
     <PageHeader
       title="New customer"
-      description="Maak direct een nieuwe customer met checking en savings account aan."
+      description="Create a new customer with checking and savings accounts immediately."
     />
 
-    <AppCard title="Customer gegevens">
+    <AppCard title="Customer details">
       <div class="inline-form-row">
         <AppInput v-model="form.firstName" label="First name" autocomplete="given-name" />
         <AppInput v-model="form.lastName" label="Last name" autocomplete="family-name" />
@@ -142,9 +142,9 @@ async function handleSubmit() {
       <template #actions>
         <div class="button-group">
           <AppButton :disabled="isSubmitting" @click="handleSubmit()">
-            {{ isSubmitting ? 'Aanmaken...' : 'Customer aanmaken' }}
+            {{ isSubmitting ? 'Creating...' : 'Create customer' }}
           </AppButton>
-          <AppButton variant="ghost" @click="router.push({ name: 'users' })">Terug naar users</AppButton>
+          <AppButton variant="ghost" @click="router.push({ name: 'users' })">Back to users</AppButton>
         </div>
       </template>
     </AppCard>

@@ -83,19 +83,19 @@ onMounted(() => void loadDashboard())
       title="Dashboard"
       :description="
         isEmployee
-          ? 'Snel overzicht van customers en approvals.'
-          : 'Overzicht van je profiel, rekeningen en balances.'
+          ? 'Quick overview of customers and approvals.'
+          : 'Overview of your profile, accounts, and balances.'
       "
     />
 
     <LoadingState
       v-if="isLoading && (isEmployee || !accountStore.summary)"
-      :label="isEmployee ? 'Dashboard laden...' : 'Accountgegevens laden...'"
+      :label="isEmployee ? 'Loading dashboard...' : 'Loading account information...'"
     />
 
     <EmptyState
       v-else-if="dashboardError"
-      title="Dashboard niet beschikbaar"
+      title="Dashboard unavailable"
       :description="dashboardError"
     />
 
@@ -104,37 +104,37 @@ onMounted(() => void loadDashboard())
         <MetricCard
           title="Customers"
           :value="String(employeeSummary.totalCustomers)"
-          caption="Totaal aantal customers."
+          caption="Total number of customers."
         />
         <MetricCard
           title="Pending"
           :value="String(employeeSummary.pendingCustomers)"
-          caption="Wachten op approval."
+          caption="Waiting for approval."
         />
         <MetricCard
           title="Blocked"
           :value="String(employeeSummary.blockedCustomers)"
-          caption="Momenteel geblokkeerd."
+          caption="Currently blocked."
         />
       </div>
 
       <div class="grid-three">
         <AppCard title="Approvals">
-          <p class="metric-caption">Bekijk pending registraties en keur ze goed of af.</p>
+          <p class="metric-caption">Review pending registrations and approve or reject them.</p>
           <template #actions>
             <AppButton @click="router.push({ name: 'approvals' })">Open approvals</AppButton>
           </template>
         </AppCard>
         <AppCard title="Users">
-          <p class="metric-caption">Zoek users op en werk gegevens of status bij.</p>
+          <p class="metric-caption">Find users and update their details or status.</p>
           <template #actions>
             <AppButton variant="secondary" @click="router.push({ name: 'users' })">Open users</AppButton>
           </template>
         </AppCard>
         <AppCard title="New customer">
-          <p class="metric-caption">Maak direct een nieuwe customer met accounts aan.</p>
+          <p class="metric-caption">Create a new customer with accounts immediately.</p>
           <template #actions>
-            <AppButton variant="secondary" @click="router.push({ name: 'user-create' })">Nieuwe customer</AppButton>
+            <AppButton variant="secondary" @click="router.push({ name: 'user-create' })">New customer</AppButton>
           </template>
         </AppCard>
       </div>
@@ -143,36 +143,36 @@ onMounted(() => void loadDashboard())
     <template v-else>
       <div class="grid-three">
         <MetricCard
-          title="Totaal saldo"
+          title="Total balance"
           :value="formatCurrency(accountStore.summary?.totalBalance ?? 0)"
-          caption="Gecombineerde balance."
+          caption="Combined balance."
         />
         <MetricCard
-          title="Beschikbaar"
+          title="Available"
           :value="formatCurrency(accountStore.summary?.liquidBalance ?? 0)"
-          caption="Direct beschikbaar saldo."
+          caption="Immediately available balance."
         />
         <MetricCard
-          title="Rekeningen"
+          title="Accounts"
           :value="String(accountStore.summary?.accountsCount ?? 0)"
-          caption="Aantal gekoppelde bankrekeningen."
+          caption="Number of linked bank accounts."
         />
       </div>
 
       <div class="grid-two">
-        <AppCard title="Profiel">
+        <AppCard title="Profile">
           <div class="stack-sm">
             <div class="row-between">
-              <span>Naam</span>
+              <span>Name</span>
               <strong>{{ user?.firstName }} {{ user?.lastName }}</strong>
             </div>
             <div class="row-between">
-              <span>E-mail</span>
+              <span>Email</span>
               <strong>{{ user?.email }}</strong>
             </div>
             <div class="row-between">
-              <span>Telefoon</span>
-              <strong>{{ user?.phoneNumber ?? 'Niet beschikbaar' }}</strong>
+              <span>Phone</span>
+              <strong>{{ user?.phoneNumber ?? 'Not available' }}</strong>
             </div>
             <div class="row-between">
               <span>Status</span>
@@ -181,15 +181,15 @@ onMounted(() => void loadDashboard())
           </div>
         </AppCard>
 
-        <AppCard title="Rekeningen">
+        <AppCard title="Accounts">
           <template #actions>
-            <AppButton variant="secondary" size="sm" @click="router.push({ name: 'accounts' })">Bekijk accounts</AppButton>
+            <AppButton variant="secondary" size="sm" @click="router.push({ name: 'accounts' })">View accounts</AppButton>
           </template>
 
           <EmptyState
             v-if="accountStore.accounts.length === 0"
-            title="Geen rekeningen gevonden"
-            description="Er zijn nog geen accounts beschikbaar voor deze klant."
+            title="No accounts found"
+            description="There are no accounts available for this customer yet."
           />
           <div v-else class="stack-sm">
             <div v-for="account in accountStore.accounts" :key="account.id" class="row-between">

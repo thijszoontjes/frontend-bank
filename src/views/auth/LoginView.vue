@@ -23,7 +23,7 @@ const redirectTarget = computed(() =>
 
 const registrationMessage = computed(() =>
   route.query.registered === '1'
-    ? 'Registratie gelukt. Log nu in met je nieuwe account en wacht daarna op goedkeuring.'
+    ? 'Registration completed. Sign in with your new account and wait for approval.'
     : '',
 )
 
@@ -48,32 +48,32 @@ async function handleSubmit() {
 
 <template>
   <div class="page-stack">
-    <AppCard title="Inloggen" subtitle="Voer je e-mailadres en wachtwoord in.">
+    <AppCard title="Sign in" subtitle="Enter your email address and password.">
       <form class="auth-form" @submit.prevent="handleSubmit">
         <p v-if="registrationMessage" class="input-hint">{{ registrationMessage }}</p>
 
         <AppInput
           v-model="form.email"
-          label="E-mail"
-          placeholder="naam@bank.nl"
+          label="Email"
+          placeholder="name@bank.com"
           autocomplete="username"
         />
         <AppInput
           v-model="form.password"
-          label="Wachtwoord"
+          label="Password"
           type="password"
-          placeholder="Voer je wachtwoord in"
+          placeholder="Enter your password"
           autocomplete="current-password"
           :error="authStore.error"
         />
 
         <div class="auth-utility">
-          <span>Heb je nog geen account?</span>
-          <RouterLink class="text-link" to="/register">Account registreren</RouterLink>
+          <span>Do you not have an account yet?</span>
+          <RouterLink class="text-link" to="/register">Create account</RouterLink>
         </div>
 
         <AppButton type="submit" :disabled="authStore.isLoading" block>
-          {{ authStore.isLoading ? 'Bezig met inloggen...' : 'Inloggen' }}
+          {{ authStore.isLoading ? 'Signing in...' : 'Sign in' }}
         </AppButton>
       </form>
     </AppCard>

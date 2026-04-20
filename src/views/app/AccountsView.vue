@@ -56,14 +56,14 @@ onMounted(() => void loadAccounts())
   <div class="page-stack">
     <PageHeader
       title="Accounts overview"
-      description="Persoonlijke accountinformatie, bankrekeningen en balances van de ingelogde klant."
+      description="Personal account information, bank accounts, and balances for the signed-in customer."
     />
 
-    <LoadingState v-if="accountStore.isLoading && accountStore.accounts.length === 0" label="Account portfolio laden..." />
+    <LoadingState v-if="accountStore.isLoading && accountStore.accounts.length === 0" label="Loading account portfolio..." />
 
     <EmptyState
       v-else-if="accountStore.error && accountStore.accounts.length === 0"
-      title="Accountgegevens niet beschikbaar"
+      title="Account information unavailable"
       :description="accountStore.error"
     />
 
@@ -83,7 +83,7 @@ onMounted(() => void loadAccounts())
       <EmptyState
         v-if="accountStore.accounts.length === 0"
         title="No accounts available"
-        description="Er zijn nog geen bankrekeningen gekoppeld aan deze customer."
+        description="There are no bank accounts linked to this customer yet."
       />
 
       <template v-else>

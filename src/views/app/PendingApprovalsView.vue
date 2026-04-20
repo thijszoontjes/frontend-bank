@@ -56,7 +56,7 @@ function buildPayload(): ApprovalPayload | null {
   ]
 
   if (values.some((value) => Number.isNaN(value))) {
-    actionError.value = 'Vul geldige numerieke limieten in.'
+    actionError.value = 'Enter valid numeric limits.'
     return null
   }
 
@@ -117,7 +117,7 @@ async function handleApprove() {
 
   try {
     await approvalStore.approve(selectedUser.value.id, payload)
-    actionMessage.value = 'Customer goedgekeurd.'
+    actionMessage.value = 'Customer approved.'
     await loadApprovals()
     await loadUserDetail(selectedUser.value.id)
   } catch (caughtError) {
@@ -137,7 +137,7 @@ async function handleReject() {
 
   try {
     await approvalStore.reject(selectedUser.value.id)
-    actionMessage.value = 'Registratie afgewezen.'
+    actionMessage.value = 'Registration rejected.'
     await loadApprovals()
     await loadUserDetail(selectedUser.value.id)
   } catch (caughtError) {
@@ -154,16 +154,16 @@ onMounted(() => void loadApprovals())
   <div class="page-stack">
     <PageHeader
       title="Approvals"
-      description="Pending registraties beoordelen en accounts aanmaken."
+      description="Review pending registrations and create accounts."
     >
       <template #actions>
-        <AppButton variant="secondary" @click="loadApprovals()">Verversen</AppButton>
+        <AppButton variant="secondary" @click="loadApprovals()">Refresh</AppButton>
       </template>
     </PageHeader>
 
     <LoadingState
       v-if="approvalStore.isLoading && approvalStore.approvals.length === 0"
-      label="Pending users laden..."
+      label="Loading pending users..."
     />
 
     <template v-else>
@@ -171,8 +171,8 @@ onMounted(() => void loadApprovals())
         <AppCard title="Pending customers">
           <EmptyState
             v-if="approvalStore.approvals.length === 0"
-            title="Geen pending users"
-            description="Er zijn momenteel geen customers die wachten op beoordeling."
+            title="No pending users"
+            description="There are currently no customers waiting for review."
           />
 
           <div v-else class="stack-sm">
@@ -186,7 +186,7 @@ onMounted(() => void loadApprovals())
                 <strong>{{ approval.firstName }} {{ approval.lastName }}</strong>
                 <span style="color: var(--color-text-muted); font-size: 0.92rem;">{{ approval.email }}</span>
                 <span style="color: var(--color-text-muted); font-size: 0.92rem;">
-                  {{ approval.createdAt ? formatDateTime(approval.createdAt) : 'Onbekend' }}
+                  {{ approval.createdAt ? formatDateTime(approval.createdAt) : 'Unknown' }}
                 </span>
               </div>
               <AppButton variant="secondary" size="sm" @click="loadUserDetail(approval.id)">Open</AppButton>
@@ -201,7 +201,7 @@ onMounted(() => void loadApprovals())
                 :disabled="!approvalStore.hasPreviousPage || approvalStore.isLoading"
                 @click="loadApprovals((approvalStore.pagination?.page ?? 0) - 1)"
               >
-                Vorige
+                Previous
               </AppButton>
               <AppButton
                 variant="secondary"
@@ -209,22 +209,22 @@ onMounted(() => void loadApprovals())
                 :disabled="!approvalStore.hasNextPage || approvalStore.isLoading"
                 @click="loadApprovals((approvalStore.pagination?.page ?? 0) + 1)"
               >
-                Volgende
+                Next
               </AppButton>
             </div>
           </template>
         </AppCard>
 
         <AppCard
-          title="Detail"
-          :subtitle="selectedUserLabel || 'Selecteer een pending user'"
+          title="Details"
+          :subtitle="selectedUserLabel || 'Select a pending user'"
         >
-          <LoadingState v-if="detailLoading" label="User detail laden..." />
+          <LoadingState v-if="detailLoading" label="Loading user details..." />
 
           <EmptyState
             v-else-if="!selectedUser"
-            title="Geen user geselecteerd"
-            description="Selecteer links een pending customer."
+            title="No user selected"
+            description="Select a pending customer on the left."
           />
 
           <template v-else>
@@ -234,16 +234,16 @@ onMounted(() => void loadApprovals())
                 <AppBadge variant="warning">{{ selectedUser.approvalStatus }}</AppBadge>
               </div>
               <div class="row-between">
-                <span>E-mail</span>
+                <span>Email</span>
                 <strong>{{ selectedUser.email }}</strong>
               </div>
               <div class="row-between">
-                <span>Telefoon</span>
-                <strong>{{ selectedUser.phoneNumber ?? 'Niet beschikbaar' }}</strong>
+                <span>Phone</span>
+                <strong>{{ selectedUser.phoneNumber ?? 'Not available' }}</strong>
               </div>
               <div class="row-between">
                 <span>BSN</span>
-                <strong>{{ selectedUser.bsn ?? 'Niet beschikbaar' }}</strong>
+                <strong>{{ selectedUser.bsn ?? 'Not available' }}</strong>
               </div>
             </div>
 
@@ -264,7 +264,7 @@ onMounted(() => void loadApprovals())
                 <strong>{{ selectedAccounts.length }}</strong>
               </div>
               <span style="color: var(--color-text-muted); font-size: 0.92rem;">
-                Pending customers hebben normaal gesproken nog geen accounts.
+                Pending customers normally do not have any accounts yet.
               </span>
               <span v-if="detailError" class="input-error">{{ detailError }}</span>
               <span v-if="actionError" class="input-error">{{ actionError }}</span>
@@ -275,10 +275,10 @@ onMounted(() => void loadApprovals())
           <template #actions>
             <div class="button-group" v-if="selectedUser">
               <AppButton :disabled="activeAction === 'approve'" @click="handleApprove()">
-                {{ activeAction === 'approve' ? 'Goedkeuren...' : 'Goedkeuren' }}
+                {{ activeAction === 'approve' ? 'Approving...' : 'Approve' }}
               </AppButton>
               <AppButton variant="danger" :disabled="activeAction === 'reject'" @click="handleReject()">
-                {{ activeAction === 'reject' ? 'Afwijzen...' : 'Afwijzen' }}
+                {{ activeAction === 'reject' ? 'Rejecting...' : 'Reject' }}
               </AppButton>
             </div>
           </template>

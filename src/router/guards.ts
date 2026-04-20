@@ -4,7 +4,7 @@ import { resolveHomeRoute } from '@/router/session-home'
 import { useAuthStore } from '@/stores/auth'
 import { pinia } from '@/stores/index'
 
-const APP_TITLE = 'Frontend Bank'
+const APP_TITLE = 'GoyimBanking'
 
 export function registerRouterGuards(router: Router) {
   router.beforeEach(async (to) => {

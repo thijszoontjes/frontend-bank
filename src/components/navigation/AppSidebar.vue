@@ -19,9 +19,9 @@ const modeLabel = computed(() => (appConfig.apiMode === 'mock' ? 'Mock API' : 'L
 <template>
   <aside class="app-sidebar">
     <div class="sidebar-brand">
-      <img :src="logoMark" alt="Banking portal logo" />
+      <img :src="logoMark" alt="GoyimBanking logo" />
       <div>
-        <strong>Banking Portal</strong>
+        <strong>GoyimBanking</strong>
         <span>{{ authStore.role === 'employee' ? 'Employee workspace' : 'Customer workspace' }}</span>
       </div>
     </div>

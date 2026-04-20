@@ -173,7 +173,7 @@ async function handleSave() {
   }
 
   if (!editForm.firstName.trim() || !editForm.lastName.trim() || !editForm.email.trim() || !editForm.phoneNumber.trim()) {
-    actionError.value = 'Vul first name, last name, email en phone number in.'
+    actionError.value = 'Enter first name, last name, email, and phone number.'
     return
   }
 
@@ -192,7 +192,7 @@ async function handleSave() {
     const updatedUser = await services.user.updateUser(selectedUser.value.id, payload)
     selectedUser.value = updatedUser
     updateUserInList(updatedUser)
-    actionMessage.value = 'Usergegevens bijgewerkt.'
+    actionMessage.value = 'User details updated.'
   } catch (caughtError) {
     actionError.value = toErrorMessage(caughtError)
   } finally {
@@ -201,7 +201,7 @@ async function handleSave() {
 }
 
 async function handleBlock() {
-  if (!selectedUser.value || !window.confirm('Weet je zeker dat je deze user wilt blokkeren?')) {
+  if (!selectedUser.value || !window.confirm('Are you sure you want to block this user?')) {
     return
   }
 
@@ -213,7 +213,7 @@ async function handleBlock() {
     const updatedUser = await services.user.blockUser(selectedUser.value.id)
     selectedUser.value = updatedUser
     updateUserInList(updatedUser)
-    actionMessage.value = 'User geblokkeerd.'
+    actionMessage.value = 'User blocked.'
   } catch (caughtError) {
     actionError.value = toErrorMessage(caughtError)
   } finally {
@@ -222,7 +222,7 @@ async function handleBlock() {
 }
 
 async function handleUnblock() {
-  if (!selectedUser.value || !window.confirm('Weet je zeker dat je deze user wilt deblokkeren?')) {
+  if (!selectedUser.value || !window.confirm('Are you sure you want to unblock this user?')) {
     return
   }
 
@@ -234,7 +234,7 @@ async function handleUnblock() {
     const updatedUser = await services.user.unblockUser(selectedUser.value.id)
     selectedUser.value = updatedUser
     updateUserInList(updatedUser)
-    actionMessage.value = 'User gedeblokkeerd.'
+    actionMessage.value = 'User unblocked.'
   } catch (caughtError) {
     actionError.value = toErrorMessage(caughtError)
   } finally {
@@ -243,7 +243,7 @@ async function handleUnblock() {
 }
 
 async function handleDelete() {
-  if (!selectedUser.value || !window.confirm('Weet je zeker dat je deze user soft wilt verwijderen?')) {
+  if (!selectedUser.value || !window.confirm('Are you sure you want to soft delete this user?')) {
     return
   }
 
@@ -253,7 +253,7 @@ async function handleDelete() {
 
   try {
     await services.user.softDeleteUser(selectedUser.value.id)
-    actionMessage.value = 'User is soft deleted.'
+    actionMessage.value = 'User soft deleted.'
     await refreshCurrentPage()
     await loadUserDetail(selectedUser.value.id)
   } catch (caughtError) {
@@ -268,9 +268,9 @@ onMounted(() => void loadUsers())
 
 <template>
   <div class="page-stack">
-    <PageHeader title="Users" description="Zoek users op en beheer hun gegevens of status.">
+    <PageHeader title="Users" description="Find users and manage their details or status.">
       <template #actions>
-        <AppButton variant="secondary" @click="refreshCurrentPage()">Verversen</AppButton>
+        <AppButton variant="secondary" @click="refreshCurrentPage()">Refresh</AppButton>
       </template>
     </PageHeader>
 
@@ -320,18 +320,18 @@ onMounted(() => void loadUsers())
         </div>
 
         <div class="button-group" style="margin-top: 1rem;">
-          <AppButton variant="secondary" :disabled="listLoading" @click="loadUsers(0)">Toepassen</AppButton>
+          <AppButton variant="secondary" :disabled="listLoading" @click="loadUsers(0)">Apply</AppButton>
         </div>
         <span v-if="listError" class="input-error" style="display: block; margin-top: 1rem;">{{ listError }}</span>
       </AppCard>
 
       <AppCard title="Users">
-        <LoadingState v-if="listLoading && users.length === 0" label="Users laden..." />
+        <LoadingState v-if="listLoading && users.length === 0" label="Loading users..." />
 
         <EmptyState
           v-else-if="users.length === 0"
-          title="Geen users gevonden"
-          description="Pas filters aan of vernieuw de lijst."
+          title="No users found"
+          description="Adjust the filters or refresh the list."
         />
 
         <div v-else class="stack-sm">
@@ -349,7 +349,7 @@ onMounted(() => void loadUsers())
               </div>
               <span style="color: var(--color-text-muted); font-size: 0.92rem;">{{ user.email }}</span>
               <span style="color: var(--color-text-muted); font-size: 0.92rem;">
-                {{ user.createdAt ? formatDateTime(user.createdAt) : 'Onbekend' }}
+                {{ user.createdAt ? formatDateTime(user.createdAt) : 'Unknown' }}
               </span>
             </div>
             <AppButton variant="secondary" size="sm" @click="loadUserDetail(user.id)">Open</AppButton>
@@ -363,7 +363,7 @@ onMounted(() => void loadUsers())
             :disabled="listLoading || (pagination.page ?? 0) === 0"
             @click="loadUsers((pagination.page ?? 0) - 1)"
           >
-            Vorige
+            Previous
           </AppButton>
           <AppButton
             variant="secondary"
@@ -371,20 +371,20 @@ onMounted(() => void loadUsers())
             :disabled="listLoading || (pagination.page ?? 0) + 1 >= (pagination.totalPages ?? 1)"
             @click="loadUsers((pagination.page ?? 0) + 1)"
           >
-            Volgende
+            Next
           </AppButton>
         </div>
       </AppCard>
     </div>
 
     <div class="grid-two">
-      <AppCard :title="selectedUser ? 'Detail' : 'Detail'" :subtitle="selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : 'Selecteer een user'">
-        <LoadingState v-if="detailLoading" label="User detail laden..." />
+      <AppCard :title="selectedUser ? 'Details' : 'Details'" :subtitle="selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : 'Select a user'">
+        <LoadingState v-if="detailLoading" label="Loading user details..." />
 
         <EmptyState
           v-else-if="!selectedUser"
-          title="Geen user geselecteerd"
-          description="Kies links een user om details te zien."
+          title="No user selected"
+          description="Choose a user on the left to view details."
         />
 
         <div v-else class="stack-sm">
@@ -403,7 +403,7 @@ onMounted(() => void loadUsers())
 
           <div class="button-group">
             <AppButton variant="secondary" :disabled="activeAction === 'save'" @click="handleSave()">
-              {{ activeAction === 'save' ? 'Opslaan...' : 'Opslaan' }}
+              {{ activeAction === 'save' ? 'Saving...' : 'Save' }}
             </AppButton>
             <AppButton
               v-if="!selectedUser.blocked && !selectedUser.deletedAt"
@@ -411,7 +411,7 @@ onMounted(() => void loadUsers())
               :disabled="activeAction === 'block'"
               @click="handleBlock()"
             >
-              {{ activeAction === 'block' ? 'Blokkeren...' : 'Blokkeren' }}
+              {{ activeAction === 'block' ? 'Blocking...' : 'Block' }}
             </AppButton>
             <AppButton
               v-if="selectedUser.blocked && !selectedUser.deletedAt"
@@ -419,7 +419,7 @@ onMounted(() => void loadUsers())
               :disabled="activeAction === 'unblock'"
               @click="handleUnblock()"
             >
-              {{ activeAction === 'unblock' ? 'Deblokkeren...' : 'Deblokkeren' }}
+              {{ activeAction === 'unblock' ? 'Unblocking...' : 'Unblock' }}
             </AppButton>
             <AppButton
               v-if="!selectedUser.deletedAt"
@@ -427,7 +427,7 @@ onMounted(() => void loadUsers())
               :disabled="activeAction === 'delete'"
               @click="handleDelete()"
             >
-              {{ activeAction === 'delete' ? 'Verwijderen...' : 'Soft delete' }}
+              {{ activeAction === 'delete' ? 'Deleting...' : 'Soft delete' }}
             </AppButton>
           </div>
 
@@ -440,13 +440,13 @@ onMounted(() => void loadUsers())
       <AppCard title="Accounts">
         <EmptyState
           v-if="!selectedUser"
-          title="Geen user geselecteerd"
-          description="Selecteer eerst een user."
+          title="No user selected"
+          description="Select a user first."
         />
         <EmptyState
           v-else-if="selectedAccounts.length === 0"
-          title="Geen accounts"
-          description="Voor deze user zijn geen rekeningen beschikbaar."
+          title="No accounts"
+          description="There are no accounts available for this user."
         />
         <div v-else class="stack-sm">
           <div v-for="account in selectedAccounts" :key="account.id" class="helper-item" style="align-items: start;">
