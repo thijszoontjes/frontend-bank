@@ -15,8 +15,8 @@ const userStore = useUserStore()
 const routeTitle = computed(() => route.meta.title ?? 'Workspace')
 const routeDescription = computed(() =>
   authStore.role === 'employee'
-    ? 'Review internal operations, monitor approvals and keep the flow under control.'
-    : 'Track balances, monitor account activity and prepare for backend integration.',
+    ? 'Beheer customers en approvals.'
+    : 'Bekijk je accounts en saldo.',
 )
 
 async function handleLogout() {

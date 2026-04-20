@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import MetricCard from '@/components/dashboard/MetricCard.vue'
@@ -11,31 +11,70 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { useCurrency } from '@/composables/useCurrency'
 import { useCurrentUser } from '@/composables/useCurrentUser'
+import { services } from '@/services'
 import { useAccountStore } from '@/stores/account'
-import { useApprovalStore } from '@/stores/approval'
+import { toErrorMessage } from '@/utils/format'
 
 const router = useRouter()
 const { formatCurrency } = useCurrency()
 const { user, userId, isEmployee } = useCurrentUser()
-const approvalStore = useApprovalStore()
 const accountStore = useAccountStore()
 
+const dashboardLoading = ref(false)
+const dashboardError = ref('')
+const employeeSummary = ref({
+  totalCustomers: 0,
+  pendingCustomers: 0,
+  blockedCustomers: 0,
+})
+
 const isLoading = computed(() =>
-  isEmployee.value ? approvalStore.isLoading : accountStore.isLoading,
+  isEmployee.value ? dashboardLoading.value : accountStore.isLoading,
 )
 
-async function loadDashboard() {
-  if (isEmployee.value) {
-    await approvalStore.load()
-    return
-  }
+async function loadEmployeeSummary() {
+  const [customers, pending, blocked] = await Promise.all([
+    services.user.listUsers(0, 1, { role: 'customer' }),
+    services.user.listUsers(0, 1, { role: 'customer', approvalStatus: 'pending' }),
+    services.user.listUsers(0, 1, { role: 'customer', blocked: true }),
+  ])
 
-  if (userId.value) {
-    await accountStore.load(userId.value)
+  employeeSummary.value = {
+    totalCustomers: customers.page.totalElements,
+    pendingCustomers: pending.page.totalElements,
+    blockedCustomers: blocked.page.totalElements,
   }
 }
 
-onMounted(loadDashboard)
+async function loadDashboard() {
+  dashboardError.value = ''
+
+  if (isEmployee.value) {
+    dashboardLoading.value = true
+
+    try {
+      await loadEmployeeSummary()
+    } catch (caughtError) {
+      dashboardError.value = toErrorMessage(caughtError)
+    } finally {
+      dashboardLoading.value = false
+    }
+
+    return
+  }
+
+  if (!userId.value) {
+    return
+  }
+
+  try {
+    await accountStore.load(userId.value)
+  } catch (caughtError) {
+    dashboardError.value = toErrorMessage(caughtError)
+  }
+}
+
+onMounted(() => void loadDashboard())
 </script>
 
 <template>
@@ -44,48 +83,61 @@ onMounted(loadDashboard)
       title="Dashboard"
       :description="
         isEmployee
-          ? 'Overzicht van ondersteund gebruikersbeheer op basis van de huidige backend.'
+          ? 'Snel overzicht van customers en approvals.'
           : 'Overzicht van je profiel, rekeningen en balances.'
       "
-    >
-      <template #actions>
-        <AppButton v-if="isEmployee" @click="router.push({ name: 'approvals' })">Open user management</AppButton>
-        <AppButton v-else variant="secondary" @click="router.push({ name: 'accounts' })">Bekijk accounts</AppButton>
-      </template>
-    </PageHeader>
+    />
 
     <LoadingState
-      v-if="isLoading && (isEmployee ? approvalStore.approvals.length === 0 : !accountStore.summary)"
-      :label="isEmployee ? 'Users laden...' : 'Accountgegevens laden...'"
+      v-if="isLoading && (isEmployee || !accountStore.summary)"
+      :label="isEmployee ? 'Dashboard laden...' : 'Accountgegevens laden...'"
+    />
+
+    <EmptyState
+      v-else-if="dashboardError"
+      title="Dashboard niet beschikbaar"
+      :description="dashboardError"
     />
 
     <template v-else-if="isEmployee">
       <div class="grid-three">
         <MetricCard
-          title="Pending customers"
-          :value="String(approvalStore.pendingCount)"
-          caption="Registraties die via de bestaande API te beheren zijn."
+          title="Customers"
+          :value="String(employeeSummary.totalCustomers)"
+          caption="Totaal aantal customers."
         />
         <MetricCard
-          title="Soft delete"
-          value="Supported"
-          caption="Beschikbaar via het bestaande delete-endpoint op users."
+          title="Pending"
+          :value="String(employeeSummary.pendingCustomers)"
+          caption="Wachten op approval."
         />
         <MetricCard
-          title="Update / block"
-          value="Not available"
-          caption="Geen backend-endpoints gevonden voor edit, block of unblock."
+          title="Blocked"
+          :value="String(employeeSummary.blockedCustomers)"
+          caption="Momenteel geblokkeerd."
         />
       </div>
 
-      <AppCard title="Beschikbare employee acties" subtitle="Alleen backend-ondersteunde functies worden hier aangeboden.">
-        <div class="stack-sm">
-          <span>Pending users bekijken</span>
-          <span>User detail per geselecteerde pending customer bekijken</span>
-          <span>Approve, reject en soft delete uitvoeren</span>
-          <span>Employee-created customer, user update en block/unblock zijn niet beschikbaar in de huidige API</span>
-        </div>
-      </AppCard>
+      <div class="grid-three">
+        <AppCard title="Approvals">
+          <p class="metric-caption">Bekijk pending registraties en keur ze goed of af.</p>
+          <template #actions>
+            <AppButton @click="router.push({ name: 'approvals' })">Open approvals</AppButton>
+          </template>
+        </AppCard>
+        <AppCard title="Users">
+          <p class="metric-caption">Zoek users op en werk gegevens of status bij.</p>
+          <template #actions>
+            <AppButton variant="secondary" @click="router.push({ name: 'users' })">Open users</AppButton>
+          </template>
+        </AppCard>
+        <AppCard title="New customer">
+          <p class="metric-caption">Maak direct een nieuwe customer met accounts aan.</p>
+          <template #actions>
+            <AppButton variant="secondary" @click="router.push({ name: 'user-create' })">Nieuwe customer</AppButton>
+          </template>
+        </AppCard>
+      </div>
     </template>
 
     <template v-else>
@@ -93,12 +145,12 @@ onMounted(loadDashboard)
         <MetricCard
           title="Totaal saldo"
           :value="formatCurrency(accountStore.summary?.totalBalance ?? 0)"
-          caption="Gecombineerde balance over je beschikbare rekeningen."
+          caption="Gecombineerde balance."
         />
         <MetricCard
           title="Beschikbaar"
           :value="formatCurrency(accountStore.summary?.liquidBalance ?? 0)"
-          caption="Direct beschikbaar saldo in EUR."
+          caption="Direct beschikbaar saldo."
         />
         <MetricCard
           title="Rekeningen"
@@ -108,7 +160,7 @@ onMounted(loadDashboard)
       </div>
 
       <div class="grid-two">
-        <AppCard title="Profiel" subtitle="Gegevens van de ingelogde klant.">
+        <AppCard title="Profiel">
           <div class="stack-sm">
             <div class="row-between">
               <span>Naam</span>
@@ -129,7 +181,11 @@ onMounted(loadDashboard)
           </div>
         </AppCard>
 
-        <AppCard title="Rekeningen" subtitle="Samenvatting van je bankaccounts en balances.">
+        <AppCard title="Rekeningen">
+          <template #actions>
+            <AppButton variant="secondary" size="sm" @click="router.push({ name: 'accounts' })">Bekijk accounts</AppButton>
+          </template>
+
           <EmptyState
             v-if="accountStore.accounts.length === 0"
             title="Geen rekeningen gevonden"

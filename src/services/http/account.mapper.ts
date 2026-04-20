@@ -44,6 +44,8 @@ function mapAccount(account: BackendAccountResponse): BankAccount {
     ledgerBalance: account.balance,
     status: mapStatus(account.status),
     updatedAt: account.createdAt,
+    absoluteLimit: account.absoluteLimit,
+    dailyLimit: account.dailyLimit,
   }
 }
 

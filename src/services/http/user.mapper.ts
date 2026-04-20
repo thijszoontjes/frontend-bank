@@ -9,9 +9,13 @@ interface BackendUserResponse {
   phoneNumber?: string
   bsn?: string
   role: 'CUSTOMER' | 'EMPLOYEE'
+  active: boolean
+  blocked: boolean
+  employeeCreated: boolean
   approved: boolean
   approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED'
   createdAt?: string
+  blockedAt?: string | null
   deletedAt?: string | null
 }
 
@@ -19,9 +23,7 @@ function mapRole(role: BackendUserResponse['role']): UserRole {
   return role === 'EMPLOYEE' ? 'employee' : 'customer'
 }
 
-function mapApprovalStatus(
-  status: BackendUserResponse['approvalStatus'],
-): UserApprovalStatus {
+function mapApprovalStatus(status: BackendUserResponse['approvalStatus']): UserApprovalStatus {
   switch (status) {
     case 'APPROVED':
       return 'approved'
@@ -41,9 +43,13 @@ export function mapUser(user: BackendUserResponse): UserProfile {
     role: mapRole(user.role),
     approvalStatus: mapApprovalStatus(user.approvalStatus),
     approved: user.approved,
+    active: user.active,
+    blocked: user.blocked,
+    employeeCreated: user.employeeCreated,
     phoneNumber: user.phoneNumber,
     bsn: user.bsn,
     createdAt: user.createdAt,
+    blockedAt: user.blockedAt ?? null,
     deletedAt: user.deletedAt ?? null,
     initials: `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase(),
   }

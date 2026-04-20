@@ -19,9 +19,10 @@ const accountStore = useAccountStore()
 const columns = [
   { key: 'name', label: 'Account' },
   { key: 'type', label: 'Type' },
-  { key: 'availableBalance', label: 'Available balance' },
+  { key: 'availableBalance', label: 'Balance' },
+  { key: 'dailyLimit', label: 'Daily limit' },
   { key: 'status', label: 'Status' },
-  { key: 'updatedAt', label: 'Updated' },
+  { key: 'updatedAt', label: 'Created' },
 ]
 
 async function loadAccounts() {
@@ -29,7 +30,11 @@ async function loadAccounts() {
     return
   }
 
-  await accountStore.load(userId.value)
+  try {
+    await accountStore.load(userId.value)
+  } catch {
+    // Store state is shown in the template.
+  }
 }
 
 function statusVariant(status: string) {
@@ -44,7 +49,7 @@ function statusVariant(status: string) {
   return 'danger'
 }
 
-onMounted(loadAccounts)
+onMounted(() => void loadAccounts())
 </script>
 
 <template>
@@ -54,7 +59,13 @@ onMounted(loadAccounts)
       description="Persoonlijke accountinformatie, bankrekeningen en balances van de ingelogde klant."
     />
 
-    <LoadingState v-if="accountStore.isLoading && accountStore.accounts.length === 0" label="Loading account portfolio..." />
+    <LoadingState v-if="accountStore.isLoading && accountStore.accounts.length === 0" label="Account portfolio laden..." />
+
+    <EmptyState
+      v-else-if="accountStore.error && accountStore.accounts.length === 0"
+      title="Accountgegevens niet beschikbaar"
+      :description="accountStore.error"
+    />
 
     <template v-else>
       <div class="grid-three" v-if="accountStore.summary">
@@ -72,7 +83,7 @@ onMounted(loadAccounts)
       <EmptyState
         v-if="accountStore.accounts.length === 0"
         title="No accounts available"
-        description="Mock accounts for the current user will appear here after the service resolves data."
+        description="Er zijn nog geen bankrekeningen gekoppeld aan deze customer."
       />
 
       <template v-else>
@@ -85,12 +96,16 @@ onMounted(loadAccounts)
           >
             <div class="stack-sm">
               <div class="row-between">
-                <span>Available</span>
+                <span>Balance</span>
                 <strong>{{ formatCurrency(account.availableBalance, account.currency) }}</strong>
               </div>
               <div class="row-between">
-                <span>Ledger balance</span>
-                <strong>{{ formatCurrency(account.ledgerBalance, account.currency) }}</strong>
+                <span>Daily limit</span>
+                <strong>{{ formatCurrency(account.dailyLimit ?? 0, account.currency) }}</strong>
+              </div>
+              <div class="row-between">
+                <span>Absolute limit</span>
+                <strong>{{ formatCurrency(account.absoluteLimit ?? 0, account.currency) }}</strong>
               </div>
               <div class="row-between">
                 <span>Status</span>
@@ -112,6 +127,9 @@ onMounted(loadAccounts)
           </template>
           <template #cell-availableBalance="{ row }">
             <strong>{{ formatCurrency(Number(row.availableBalance), String(row.currency)) }}</strong>
+          </template>
+          <template #cell-dailyLimit="{ row }">
+            {{ formatCurrency(Number(row.dailyLimit ?? 0), String(row.currency)) }}
           </template>
           <template #cell-status="{ value }">
             <AppBadge :variant="statusVariant(String(value))">{{ value }}</AppBadge>

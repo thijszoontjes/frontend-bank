@@ -15,50 +15,36 @@ import type { BankAccount } from '@/types/account'
 import type { UserProfile } from '@/types/user'
 import { formatDateTime, toErrorMessage } from '@/utils/format'
 
-interface LimitFormState {
-  checkingAbsolute: string
-  checkingDaily: string
-  savingsAbsolute: string
-  savingsDaily: string
-}
-
 const approvalStore = useApprovalStore()
-const activeAction = ref<string | null>(null)
 const selectedUserId = ref<string | null>(null)
 const selectedUser = ref<UserProfile | null>(null)
 const selectedAccounts = ref<BankAccount[]>([])
 const detailLoading = ref(false)
 const detailError = ref('')
-const rowErrors = reactive<Record<string, string>>({})
-const limitForms = reactive<Record<string, LimitFormState>>({})
+const actionError = ref('')
+const actionMessage = ref('')
+const activeAction = ref<string | null>(null)
+
+const limitForm = reactive({
+  checkingAbsolute: '-500',
+  checkingDaily: '1000',
+  savingsAbsolute: '0',
+  savingsDaily: '5000',
+})
 
 const selectedUserLabel = computed(() =>
   selectedUser.value ? `${selectedUser.value.firstName} ${selectedUser.value.lastName}` : '',
 )
 
-function ensureForm(userId: string) {
-  if (!limitForms[userId]) {
-    limitForms[userId] = {
-      checkingAbsolute: '-500',
-      checkingDaily: '1000',
-      savingsAbsolute: '0',
-      savingsDaily: '5000',
-    }
-  }
-
-  return limitForms[userId]
-}
-
-function buildPayload(userId: string): ApprovalPayload | null {
-  const form = ensureForm(userId)
+function buildPayload(): ApprovalPayload | null {
   const payload: ApprovalPayload = {
     checkingAccount: {
-      absoluteLimit: Number(form.checkingAbsolute),
-      dailyLimit: Number(form.checkingDaily),
+      absoluteLimit: Number(limitForm.checkingAbsolute),
+      dailyLimit: Number(limitForm.checkingDaily),
     },
     savingsAccount: {
-      absoluteLimit: Number(form.savingsAbsolute),
-      dailyLimit: Number(form.savingsDaily),
+      absoluteLimit: Number(limitForm.savingsAbsolute),
+      dailyLimit: Number(limitForm.savingsDaily),
     },
   }
 
@@ -70,22 +56,22 @@ function buildPayload(userId: string): ApprovalPayload | null {
   ]
 
   if (values.some((value) => Number.isNaN(value))) {
-    rowErrors[userId] = 'Vul geldige numerieke limieten in voor beide accounts.'
+    actionError.value = 'Vul geldige numerieke limieten in.'
     return null
   }
 
-  rowErrors[userId] = ''
   return payload
 }
 
 async function loadApprovals(page = approvalStore.pagination?.page ?? 0) {
   await approvalStore.load(page)
-  approvalStore.approvals.forEach((approval) => ensureForm(approval.id))
 
   if (selectedUserId.value && !approvalStore.approvals.some((approval) => approval.id === selectedUserId.value)) {
     selectedUserId.value = null
     selectedUser.value = null
     selectedAccounts.value = []
+    actionMessage.value = ''
+    actionError.value = ''
   }
 }
 
@@ -93,15 +79,19 @@ async function loadUserDetail(userId: string) {
   selectedUserId.value = userId
   detailLoading.value = true
   detailError.value = ''
+  actionError.value = ''
+  actionMessage.value = ''
 
   try {
-    const [user, portfolio] = await Promise.all([
-      services.user.getUserById(userId),
-      services.account.getAccountPortfolio(userId),
-    ])
-
+    const user = await services.user.getUserById(userId)
     selectedUser.value = user
-    selectedAccounts.value = portfolio.accounts
+
+    try {
+      const portfolio = await services.account.getAccountPortfolio(userId)
+      selectedAccounts.value = portfolio.accounts
+    } catch {
+      selectedAccounts.value = []
+    }
   } catch (caughtError) {
     selectedUser.value = null
     selectedAccounts.value = []
@@ -111,52 +101,47 @@ async function loadUserDetail(userId: string) {
   }
 }
 
-async function handleApprove(userId: string) {
-  const payload = buildPayload(userId)
+async function handleApprove() {
+  if (!selectedUser.value) {
+    return
+  }
+
+  const payload = buildPayload()
 
   if (!payload) {
     return
   }
 
-  activeAction.value = `${userId}:approve`
+  activeAction.value = 'approve'
+  actionError.value = ''
 
   try {
-    await approvalStore.approve(userId, payload)
+    await approvalStore.approve(selectedUser.value.id, payload)
+    actionMessage.value = 'Customer goedgekeurd.'
     await loadApprovals()
+    await loadUserDetail(selectedUser.value.id)
   } catch (caughtError) {
-    rowErrors[userId] = toErrorMessage(caughtError)
+    actionError.value = toErrorMessage(caughtError)
   } finally {
     activeAction.value = null
   }
 }
 
-async function handleReject(userId: string) {
-  rowErrors[userId] = ''
-  activeAction.value = `${userId}:reject`
-
-  try {
-    await approvalStore.reject(userId)
-    await loadApprovals()
-  } catch (caughtError) {
-    rowErrors[userId] = toErrorMessage(caughtError)
-  } finally {
-    activeAction.value = null
-  }
-}
-
-async function handleSoftDelete(userId: string) {
-  if (!window.confirm('Weet je zeker dat je deze user soft wilt verwijderen?')) {
+async function handleReject() {
+  if (!selectedUser.value) {
     return
   }
 
-  activeAction.value = `${userId}:delete`
-  rowErrors[userId] = ''
+  activeAction.value = 'reject'
+  actionError.value = ''
 
   try {
-    await services.user.softDeleteUser(userId)
+    await approvalStore.reject(selectedUser.value.id)
+    actionMessage.value = 'Registratie afgewezen.'
     await loadApprovals()
+    await loadUserDetail(selectedUser.value.id)
   } catch (caughtError) {
-    rowErrors[userId] = toErrorMessage(caughtError)
+    actionError.value = toErrorMessage(caughtError)
   } finally {
     activeAction.value = null
   }
@@ -168,36 +153,13 @@ onMounted(() => void loadApprovals())
 <template>
   <div class="page-stack">
     <PageHeader
-      title="User management"
-      description="Deze pagina gebruikt alleen de huidige backend-support: pending customers, user detail, approval, reject en soft delete."
+      title="Approvals"
+      description="Pending registraties beoordelen en accounts aanmaken."
     >
       <template #actions>
         <AppButton variant="secondary" @click="loadApprovals()">Verversen</AppButton>
       </template>
     </PageHeader>
-
-    <div class="grid-three">
-      <AppCard title="Ondersteund" subtitle="Beschikbaar in de huidige backend.">
-        <div class="stack-sm">
-          <span>Pending users bekijken</span>
-          <span>User detail ophalen</span>
-          <span>Approve, reject en soft delete</span>
-        </div>
-      </AppCard>
-      <AppCard title="Niet ondersteund" subtitle="Geen endpoint gevonden in backend/OpenAPI.">
-        <div class="stack-sm">
-          <span>Employee-created customer</span>
-          <span>Userinformatie updaten</span>
-          <span>Block / unblock gebruiker</span>
-        </div>
-      </AppCard>
-      <AppCard title="Paginatie" subtitle="De lijst gebruikt de bestaande page/size support op pending users.">
-        <div class="row-between">
-          <span>Totaal pending users</span>
-          <strong>{{ approvalStore.pendingCount }}</strong>
-        </div>
-      </AppCard>
-    </div>
 
     <LoadingState
       v-if="approvalStore.isLoading && approvalStore.approvals.length === 0"
@@ -206,7 +168,7 @@ onMounted(() => void loadApprovals())
 
     <template v-else>
       <div class="grid-two">
-        <AppCard title="Pending customers" subtitle="Alleen users die via het bestaande lijst-endpoint beschikbaar zijn.">
+        <AppCard title="Pending customers">
           <EmptyState
             v-if="approvalStore.approvals.length === 0"
             title="Geen pending users"
@@ -227,7 +189,7 @@ onMounted(() => void loadApprovals())
                   {{ approval.createdAt ? formatDateTime(approval.createdAt) : 'Onbekend' }}
                 </span>
               </div>
-              <AppButton variant="secondary" size="sm" @click="loadUserDetail(approval.id)">Details</AppButton>
+              <AppButton variant="secondary" size="sm" @click="loadUserDetail(approval.id)">Open</AppButton>
             </div>
           </div>
 
@@ -254,15 +216,15 @@ onMounted(() => void loadApprovals())
         </AppCard>
 
         <AppCard
-          title="User detail"
-          :subtitle="selectedUserLabel || 'Selecteer een pending user uit de lijst'"
+          title="Detail"
+          :subtitle="selectedUserLabel || 'Selecteer een pending user'"
         >
           <LoadingState v-if="detailLoading" label="User detail laden..." />
 
           <EmptyState
             v-else-if="!selectedUser"
             title="Geen user geselecteerd"
-            description="Selecteer links een pending customer om detailinformatie en beheeracties te zien."
+            description="Selecteer links een pending customer."
           />
 
           <template v-else>
@@ -283,36 +245,16 @@ onMounted(() => void loadApprovals())
                 <span>BSN</span>
                 <strong>{{ selectedUser.bsn ?? 'Niet beschikbaar' }}</strong>
               </div>
-              <div class="row-between">
-                <span>Aangemaakt</span>
-                <strong>{{ selectedUser.createdAt ? formatDateTime(selectedUser.createdAt) : 'Onbekend' }}</strong>
-              </div>
             </div>
 
             <div class="stack-sm" style="margin-top: 1rem;">
               <div class="inline-form-row">
-                <AppInput
-                  v-model="ensureForm(selectedUser.id).checkingAbsolute"
-                  label="Checking absolute limit"
-                  placeholder="-500"
-                />
-                <AppInput
-                  v-model="ensureForm(selectedUser.id).checkingDaily"
-                  label="Checking daily limit"
-                  placeholder="1000"
-                />
+                <AppInput v-model="limitForm.checkingAbsolute" label="Checking absolute limit" />
+                <AppInput v-model="limitForm.checkingDaily" label="Checking daily limit" />
               </div>
               <div class="inline-form-row">
-                <AppInput
-                  v-model="ensureForm(selectedUser.id).savingsAbsolute"
-                  label="Savings absolute limit"
-                  placeholder="0"
-                />
-                <AppInput
-                  v-model="ensureForm(selectedUser.id).savingsDaily"
-                  label="Savings daily limit"
-                  placeholder="5000"
-                />
+                <AppInput v-model="limitForm.savingsAbsolute" label="Savings absolute limit" />
+                <AppInput v-model="limitForm.savingsDaily" label="Savings daily limit" />
               </div>
             </div>
 
@@ -325,31 +267,18 @@ onMounted(() => void loadApprovals())
                 Pending customers hebben normaal gesproken nog geen accounts.
               </span>
               <span v-if="detailError" class="input-error">{{ detailError }}</span>
-              <span v-if="rowErrors[selectedUser.id]" class="input-error">{{ rowErrors[selectedUser.id] }}</span>
+              <span v-if="actionError" class="input-error">{{ actionError }}</span>
+              <span v-if="actionMessage" style="color: var(--color-success);">{{ actionMessage }}</span>
             </div>
           </template>
 
           <template #actions>
             <div class="button-group" v-if="selectedUser">
-              <AppButton
-                :disabled="activeAction === `${selectedUser.id}:approve` || activeAction === `${selectedUser.id}:reject` || activeAction === `${selectedUser.id}:delete`"
-                @click="handleApprove(selectedUser.id)"
-              >
-                {{ activeAction === `${selectedUser.id}:approve` ? 'Goedkeuren...' : 'Goedkeuren' }}
+              <AppButton :disabled="activeAction === 'approve'" @click="handleApprove()">
+                {{ activeAction === 'approve' ? 'Goedkeuren...' : 'Goedkeuren' }}
               </AppButton>
-              <AppButton
-                variant="danger"
-                :disabled="activeAction === `${selectedUser.id}:approve` || activeAction === `${selectedUser.id}:reject` || activeAction === `${selectedUser.id}:delete`"
-                @click="handleReject(selectedUser.id)"
-              >
-                {{ activeAction === `${selectedUser.id}:reject` ? 'Afwijzen...' : 'Afwijzen' }}
-              </AppButton>
-              <AppButton
-                variant="ghost"
-                :disabled="activeAction === `${selectedUser.id}:approve` || activeAction === `${selectedUser.id}:reject` || activeAction === `${selectedUser.id}:delete`"
-                @click="handleSoftDelete(selectedUser.id)"
-              >
-                {{ activeAction === `${selectedUser.id}:delete` ? 'Verwijderen...' : 'Soft delete' }}
+              <AppButton variant="danger" :disabled="activeAction === 'reject'" @click="handleReject()">
+                {{ activeAction === 'reject' ? 'Afwijzen...' : 'Afwijzen' }}
               </AppButton>
             </div>
           </template>

@@ -2,7 +2,13 @@ import type { ApprovalListResult, ApprovalPayload } from '@/types/approval'
 import type { AccountPortfolio } from '@/types/account'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
 import type { TransactionItem } from '@/types/transaction'
-import type { UserProfile } from '@/types/user'
+import type {
+  EmployeeCreateCustomerPayload,
+  UserListFilters,
+  UserListResult,
+  UserProfile,
+  UserUpdatePayload,
+} from '@/types/user'
 
 export interface AuthService {
   login(payload: LoginPayload): Promise<AuthSession>
@@ -26,8 +32,13 @@ export interface ApprovalService {
 }
 
 export interface UserManagementService {
+  listUsers(page?: number, size?: number, filters?: UserListFilters): Promise<UserListResult>
   getUserById(userId: string): Promise<UserProfile>
+  createCustomer(payload: EmployeeCreateCustomerPayload): Promise<UserProfile>
+  updateUser(userId: string, payload: UserUpdatePayload): Promise<UserProfile>
   softDeleteUser(userId: string): Promise<void>
+  blockUser(userId: string): Promise<UserProfile>
+  unblockUser(userId: string): Promise<UserProfile>
 }
 
 export interface ServiceRegistry {

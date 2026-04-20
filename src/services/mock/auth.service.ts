@@ -28,6 +28,10 @@ export function createMockAuthService(): AuthService {
         throw new Error('Invalid credentials. Use one of the demo accounts on the login screen.')
       }
 
+      if (user.blocked || user.deletedAt || !user.active || user.approvalStatus === 'rejected') {
+        throw new Error('User is blocked, rejected, or deactivated.')
+      }
+
       return toSession(user)
     },
     async register(payload: RegisterPayload) {
@@ -50,8 +54,12 @@ export function createMockAuthService(): AuthService {
         role: 'customer' as const,
         approvalStatus: 'pending' as const,
         approved: false,
+        active: true,
+        blocked: false,
+        employeeCreated: false,
         initials: `${payload.firstName[0] ?? ''}${payload.lastName[0] ?? ''}`.toUpperCase(),
         createdAt: new Date().toISOString(),
+        blockedAt: null,
         deletedAt: null,
       }
 

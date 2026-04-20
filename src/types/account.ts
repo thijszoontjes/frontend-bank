@@ -12,6 +12,8 @@ export interface BankAccount {
   ledgerBalance: number
   status: AccountStatus
   updatedAt: string
+  absoluteLimit?: number
+  dailyLimit?: number
 }
 
 export interface AccountSummary {
