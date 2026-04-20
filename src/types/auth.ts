@@ -1,4 +1,3 @@
-import type { UserRole } from './common'
 import type { UserProfile } from './user'
 
 export interface LoginPayload {
@@ -10,8 +9,9 @@ export interface RegisterPayload {
   firstName: string
   lastName: string
   email: string
+  phoneNumber: string
+  bsn: string
   password: string
-  role: UserRole
 }
 
 export interface AuthSession {

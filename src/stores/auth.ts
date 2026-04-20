@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
+import { SESSION_STORAGE_KEY } from '@/constants/auth'
 import { services } from '@/services'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
 import { toErrorMessage } from '@/utils/format'
@@ -11,8 +12,6 @@ import { useApprovalStore } from './approval'
 import { useTransactionStore } from './transaction'
 import { useUserStore } from './user'
 
-const STORAGE_KEY = 'frontend-bank.session'
-
 export const useAuthStore = defineStore('auth', () => {
   const session = ref<AuthSession | null>(null)
   const initialized = ref(false)
@@ -21,11 +20,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   const user = computed(() => session.value?.user ?? null)
   const role = computed(() => user.value?.role ?? null)
+  const isApproved = computed(() => user.value?.approved ?? false)
+  const isPendingCustomer = computed(
+    () => role.value === 'customer' && user.value?.approvalStatus === 'pending',
+  )
   const isAuthenticated = computed(() => Boolean(session.value?.token))
 
   function applySession(nextSession: AuthSession | null) {
     session.value = nextSession
-    writeStorage(STORAGE_KEY, nextSession)
+    writeStorage(SESSION_STORAGE_KEY, nextSession)
 
     const userStore = useUserStore()
     userStore.syncProfile(nextSession?.user ?? null)
@@ -42,18 +45,18 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
 
-    const storedSession = readStorage<AuthSession>(STORAGE_KEY)
-
-    if (storedSession) {
-      applySession(storedSession)
-      initialized.value = true
-      return
-    }
+    const storedSession = readStorage<AuthSession>(SESSION_STORAGE_KEY)
 
     try {
-      const remoteSession = await services.auth.getCurrentSession()
-      if (remoteSession) {
-        applySession(remoteSession)
+      if (storedSession?.token) {
+        applySession(storedSession)
+        const currentUser = await services.auth.getCurrentUser()
+        applySession({
+          ...storedSession,
+          user: currentUser,
+        })
+      } else {
+        applySession(null)
       }
     } catch {
       applySession(null)
@@ -83,15 +86,27 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const nextSession = await services.auth.register(payload)
-      applySession(nextSession)
-      return nextSession
+      return await services.auth.register(payload)
     } catch (caughtError) {
       error.value = toErrorMessage(caughtError)
       throw caughtError
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function refreshCurrentUser() {
+    if (!session.value?.token) {
+      return null
+    }
+
+    const nextUser = await services.auth.getCurrentUser()
+    applySession({
+      ...session.value,
+      user: nextUser,
+    })
+
+    return nextUser
   }
 
   async function logout() {
@@ -112,10 +127,13 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     user,
     role,
+    isApproved,
+    isPendingCustomer,
     isAuthenticated,
     hydrate,
     login,
     register,
+    refreshCurrentUser,
     logout,
   }
 })

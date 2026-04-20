@@ -19,9 +19,10 @@ const accountStore = useAccountStore()
 const columns = [
   { key: 'name', label: 'Account' },
   { key: 'type', label: 'Type' },
-  { key: 'availableBalance', label: 'Available balance' },
+  { key: 'availableBalance', label: 'Balance' },
+  { key: 'dailyLimit', label: 'Daily limit' },
   { key: 'status', label: 'Status' },
-  { key: 'updatedAt', label: 'Updated' },
+  { key: 'updatedAt', label: 'Created' },
 ]
 
 async function loadAccounts() {
@@ -29,7 +30,11 @@ async function loadAccounts() {
     return
   }
 
-  await accountStore.load(userId.value)
+  try {
+    await accountStore.load(userId.value)
+  } catch {
+    // Store state is shown in the template.
+  }
 }
 
 function statusVariant(status: string) {
@@ -44,23 +49,41 @@ function statusVariant(status: string) {
   return 'danger'
 }
 
-onMounted(loadAccounts)
+onMounted(() => void loadAccounts())
 </script>
 
 <template>
   <div class="page-stack">
     <PageHeader
       title="Accounts overview"
-      description="Dedicated account state lives in its own store, keeping the page focused on presentation."
+      description="Personal account information, bank accounts, and balances for the signed-in customer."
     />
 
     <LoadingState v-if="accountStore.isLoading && accountStore.accounts.length === 0" label="Loading account portfolio..." />
 
+    <EmptyState
+      v-else-if="accountStore.error && accountStore.accounts.length === 0"
+      title="Account information unavailable"
+      :description="accountStore.error"
+    />
+
     <template v-else>
+      <div class="grid-three" v-if="accountStore.summary">
+        <AppCard title="Total balance">
+          <p class="metric-value">{{ formatCurrency(accountStore.summary.totalBalance) }}</p>
+        </AppCard>
+        <AppCard title="Available balance">
+          <p class="metric-value">{{ formatCurrency(accountStore.summary.liquidBalance) }}</p>
+        </AppCard>
+        <AppCard title="Accounts">
+          <p class="metric-value">{{ accountStore.summary.accountsCount }}</p>
+        </AppCard>
+      </div>
+
       <EmptyState
         v-if="accountStore.accounts.length === 0"
         title="No accounts available"
-        description="Mock accounts for the current user will appear here after the service resolves data."
+        description="There are no bank accounts linked to this customer yet."
       />
 
       <template v-else>
@@ -73,12 +96,16 @@ onMounted(loadAccounts)
           >
             <div class="stack-sm">
               <div class="row-between">
-                <span>Available</span>
+                <span>Balance</span>
                 <strong>{{ formatCurrency(account.availableBalance, account.currency) }}</strong>
               </div>
               <div class="row-between">
-                <span>Ledger balance</span>
-                <strong>{{ formatCurrency(account.ledgerBalance, account.currency) }}</strong>
+                <span>Daily limit</span>
+                <strong>{{ formatCurrency(account.dailyLimit ?? 0, account.currency) }}</strong>
+              </div>
+              <div class="row-between">
+                <span>Absolute limit</span>
+                <strong>{{ formatCurrency(account.absoluteLimit ?? 0, account.currency) }}</strong>
               </div>
               <div class="row-between">
                 <span>Status</span>
@@ -100,6 +127,9 @@ onMounted(loadAccounts)
           </template>
           <template #cell-availableBalance="{ row }">
             <strong>{{ formatCurrency(Number(row.availableBalance), String(row.currency)) }}</strong>
+          </template>
+          <template #cell-dailyLimit="{ row }">
+            {{ formatCurrency(Number(row.dailyLimit ?? 0), String(row.currency)) }}
           </template>
           <template #cell-status="{ value }">
             <AppBadge :variant="statusVariant(String(value))">{{ value }}</AppBadge>

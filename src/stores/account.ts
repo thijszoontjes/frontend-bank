@@ -16,13 +16,9 @@ export const useAccountStore = defineStore('account', () => {
     error.value = null
 
     try {
-      const [nextAccounts, nextSummary] = await Promise.all([
-        services.account.getAccountsByUser(userId),
-        services.account.getAccountSummary(userId),
-      ])
-
-      accounts.value = nextAccounts
-      summary.value = nextSummary
+      const portfolio = await services.account.getAccountPortfolio(userId)
+      accounts.value = portfolio.accounts
+      summary.value = portfolio.summary
     } catch (caughtError) {
       error.value = toErrorMessage(caughtError)
       throw caughtError

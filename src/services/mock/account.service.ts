@@ -1,10 +1,9 @@
 import type { AccountService } from '@/services/contracts'
-import type { AccountSummary } from '@/types/account'
 
 import { mockDb } from './db'
 import { simulateDelay } from './shared'
 
-function buildSummary(userId: string): AccountSummary {
+function buildSummary(userId: string) {
   const accounts = mockDb.accounts.filter((account) => account.userId === userId)
   const totalBalance = accounts.reduce((sum, account) => sum + account.ledgerBalance, 0)
   const liquidBalance = accounts.reduce((sum, account) => sum + account.availableBalance, 0)
@@ -19,13 +18,13 @@ function buildSummary(userId: string): AccountSummary {
 
 export function createMockAccountService(): AccountService {
   return {
-    async getAccountsByUser(userId: string) {
-      await simulateDelay()
-      return mockDb.accounts.filter((account) => account.userId === userId)
-    },
-    async getAccountSummary(userId: string) {
+    async getAccountPortfolio(userId: string) {
       await simulateDelay(180)
-      return buildSummary(userId)
+
+      return {
+        accounts: mockDb.accounts.filter((account) => account.userId === userId),
+        summary: buildSummary(userId),
+      }
     },
   }
 }

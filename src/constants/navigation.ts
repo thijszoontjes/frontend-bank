@@ -17,16 +17,30 @@ export const navigationItems: NavigationItem[] = [
     label: 'Accounts',
     shortLabel: 'AC',
     to: '/accounts',
+    roles: ['customer'],
   },
   {
     label: 'Transactions',
     shortLabel: 'TX',
     to: '/transactions',
+    roles: ['customer'],
   },
   {
-    label: 'Pending approvals',
-    shortLabel: 'PA',
+    label: 'Approvals',
+    shortLabel: 'AP',
     to: '/approvals',
+    roles: ['employee'],
+  },
+  {
+    label: 'Users',
+    shortLabel: 'US',
+    to: '/users',
+    roles: ['employee'],
+  },
+  {
+    label: 'New customer',
+    shortLabel: 'NC',
+    to: '/users/new',
     roles: ['employee'],
   },
 ]

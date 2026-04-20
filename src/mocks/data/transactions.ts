@@ -3,7 +3,7 @@ import type { TransactionItem } from '@/types/transaction'
 export const mockTransactions: TransactionItem[] = [
   {
     id: 'txn-001',
-    userId: 'user-customer-001',
+    userId: 'user-customer-approved',
     accountId: 'acc-001',
     description: 'Salary April',
     counterparty: 'Northwind BV',
@@ -16,7 +16,7 @@ export const mockTransactions: TransactionItem[] = [
   },
   {
     id: 'txn-002',
-    userId: 'user-customer-001',
+    userId: 'user-customer-approved',
     accountId: 'acc-001',
     description: 'Rent Payment',
     counterparty: 'WoonGoed',
@@ -29,7 +29,7 @@ export const mockTransactions: TransactionItem[] = [
   },
   {
     id: 'txn-003',
-    userId: 'user-customer-001',
+    userId: 'user-customer-approved',
     accountId: 'acc-001',
     description: 'Supermarket',
     counterparty: 'Albert Heijn',
@@ -42,7 +42,7 @@ export const mockTransactions: TransactionItem[] = [
   },
   {
     id: 'txn-004',
-    userId: 'user-customer-001',
+    userId: 'user-customer-approved',
     accountId: 'acc-002',
     description: 'Automatic Savings',
     counterparty: 'Internal Transfer',

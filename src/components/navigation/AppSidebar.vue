@@ -12,15 +12,17 @@ const authStore = useAuthStore()
 const visibleItems = computed(() =>
   navigationItems.filter((item) => !item.roles || (authStore.role ? item.roles.includes(authStore.role) : false)),
 )
+
+const modeLabel = computed(() => (appConfig.apiMode === 'mock' ? 'Mock API' : 'Live API'))
 </script>
 
 <template>
   <aside class="app-sidebar">
     <div class="sidebar-brand">
-      <img :src="logoMark" alt="Frontend Bank logo" />
+      <img :src="logoMark" alt="GoyimBanking logo" />
       <div>
-        <strong>Frontend Bank</strong>
-        <span>Banking workspace</span>
+        <strong>GoyimBanking</strong>
+        <span>{{ authStore.role === 'employee' ? 'Employee workspace' : 'Customer workspace' }}</span>
       </div>
     </div>
 
@@ -37,10 +39,8 @@ const visibleItems = computed(() =>
     </nav>
 
     <div class="sidebar-footnote">
-      <strong>{{ appConfig.apiMode === 'mock' ? 'Mock mode active' : 'Live API mode' }}</strong>
-      <p>
-        Services are resolved centrally, so switching to Spring Boot later only changes the implementation layer.
-      </p>
+      <strong>{{ modeLabel }}</strong>
+      <p>{{ authStore.user?.email }}</p>
     </div>
   </aside>
 </template>

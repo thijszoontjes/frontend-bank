@@ -5,7 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppInput from '@/components/ui/AppInput.vue'
-import { demoCredentials } from '@/mocks/data/users'
+import { resolveHomeRoute } from '@/router/session-home'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -13,18 +13,19 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const form = reactive({
-  email: demoCredentials.customer.email,
-  password: demoCredentials.customer.password,
+  email: typeof route.query.email === 'string' ? route.query.email : '',
+  password: '',
 })
 
 const redirectTarget = computed(() =>
-  typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard',
+  typeof route.query.redirect === 'string' ? route.query.redirect : null,
 )
 
-function fillDemo(role: 'customer' | 'employee') {
-  form.email = demoCredentials[role].email
-  form.password = demoCredentials[role].password
-}
+const registrationMessage = computed(() =>
+  route.query.registered === '1'
+    ? 'Registration completed. Sign in with your new account and wait for approval.'
+    : '',
+)
 
 async function handleSubmit() {
   try {
@@ -33,7 +34,12 @@ async function handleSubmit() {
       password: form.password,
     })
 
-    await router.push(redirectTarget.value)
+    if (redirectTarget.value && !authStore.isPendingCustomer) {
+      await router.push(redirectTarget.value)
+      return
+    }
+
+    await router.push(resolveHomeRoute(authStore))
   } catch {
     return
   }
@@ -42,14 +48,15 @@ async function handleSubmit() {
 
 <template>
   <div class="page-stack">
-    <AppCard title="Sign in" subtitle="Use a demo account or your own registered mock user to enter the app shell.">
+    <AppCard title="Sign in" subtitle="Enter your email address and password.">
       <form class="auth-form" @submit.prevent="handleSubmit">
+        <p v-if="registrationMessage" class="input-hint">{{ registrationMessage }}</p>
+
         <AppInput
           v-model="form.email"
           label="Email"
-          placeholder="name@bank.dev"
+          placeholder="name@bank.com"
           autocomplete="username"
-          :error="authStore.error"
         />
         <AppInput
           v-model="form.password"
@@ -57,36 +64,18 @@ async function handleSubmit() {
           type="password"
           placeholder="Enter your password"
           autocomplete="current-password"
+          :error="authStore.error"
         />
 
         <div class="auth-utility">
-          <span>Mock-first authentication with local session persistence.</span>
+          <span>Do you not have an account yet?</span>
           <RouterLink class="text-link" to="/register">Create account</RouterLink>
         </div>
 
         <AppButton type="submit" :disabled="authStore.isLoading" block>
-          {{ authStore.isLoading ? 'Signing in...' : 'Continue to workspace' }}
+          {{ authStore.isLoading ? 'Signing in...' : 'Sign in' }}
         </AppButton>
       </form>
-    </AppCard>
-
-    <AppCard title="Demo access" subtitle="Use the quick-fill actions below to test both role-based flows.">
-      <div class="helper-list">
-        <div class="helper-item">
-          <div>
-            <strong>Customer</strong>
-            <div style="color: var(--color-text-muted); font-size: 0.92rem;">{{ demoCredentials.customer.email }}</div>
-          </div>
-          <AppButton variant="secondary" size="sm" @click="fillDemo('customer')">Use customer</AppButton>
-        </div>
-        <div class="helper-item">
-          <div>
-            <strong>Employee</strong>
-            <div style="color: var(--color-text-muted); font-size: 0.92rem;">{{ demoCredentials.employee.email }}</div>
-          </div>
-          <AppButton variant="secondary" size="sm" @click="fillDemo('employee')">Use employee</AppButton>
-        </div>
-      </div>
     </AppCard>
   </div>
 </template>

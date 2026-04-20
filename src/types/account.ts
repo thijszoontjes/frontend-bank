@@ -12,6 +12,8 @@ export interface BankAccount {
   ledgerBalance: number
   status: AccountStatus
   updatedAt: string
+  absoluteLimit?: number
+  dailyLimit?: number
 }
 
 export interface AccountSummary {
@@ -19,4 +21,9 @@ export interface AccountSummary {
   liquidBalance: number
   accountsCount: number
   mainCurrency: string
+}
+
+export interface AccountPortfolio {
+  accounts: BankAccount[]
+  summary: AccountSummary
 }

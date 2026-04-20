@@ -30,8 +30,9 @@ export const appRoutes: RouteRecordRaw[] = [
         name: 'accounts',
         component: () => import('@/views/app/AccountsView.vue'),
         meta: {
-          title: 'Accounts overview',
+          title: 'Accounts',
           requiresAuth: true,
+          roles: ['customer'],
         },
       },
       {
@@ -41,6 +42,7 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: {
           title: 'Transactions',
           requiresAuth: true,
+          roles: ['customer'],
         },
       },
       {
@@ -48,7 +50,27 @@ export const appRoutes: RouteRecordRaw[] = [
         name: 'approvals',
         component: () => import('@/views/app/PendingApprovalsView.vue'),
         meta: {
-          title: 'Pending approvals',
+          title: 'Approvals',
+          requiresAuth: true,
+          roles: ['employee'],
+        },
+      },
+      {
+        path: 'users',
+        name: 'users',
+        component: () => import('@/views/app/EmployeeUsersView.vue'),
+        meta: {
+          title: 'Users',
+          requiresAuth: true,
+          roles: ['employee'],
+        },
+      },
+      {
+        path: 'users/new',
+        name: 'user-create',
+        component: () => import('@/views/app/CreateCustomerView.vue'),
+        meta: {
+          title: 'New customer',
           requiresAuth: true,
           roles: ['employee'],
         },
