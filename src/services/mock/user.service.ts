@@ -182,6 +182,19 @@ export function createMockUserManagementService(): UserManagementService {
         initials: `${(payload.firstName ?? user.firstName)[0] ?? ''}${(payload.lastName ?? user.lastName)[0] ?? ''}`.toUpperCase(),
       })
 
+      const checkingAccount = mockDb.accounts.find((account) => account.userId === userId && account.type === 'checking')
+      const savingsAccount = mockDb.accounts.find((account) => account.userId === userId && account.type === 'savings')
+
+      if (payload.checkingAccount && checkingAccount) {
+        checkingAccount.absoluteLimit = payload.checkingAccount.absoluteLimit
+        checkingAccount.dailyLimit = payload.checkingAccount.dailyLimit
+      }
+
+      if (payload.savingsAccount && savingsAccount) {
+        savingsAccount.absoluteLimit = payload.savingsAccount.absoluteLimit
+        savingsAccount.dailyLimit = payload.savingsAccount.dailyLimit
+      }
+
       return stripPassword(user)
     },
     async softDeleteUser(userId) {
