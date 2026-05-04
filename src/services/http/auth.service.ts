@@ -23,7 +23,9 @@ export function createHttpAuthService(client: HttpClient): AuthService {
       const response = await client.post<BackendUserResponse>('/auth/register', payload)
       return mapUser(response)
     },
-    logout: async () => undefined,
+    async logout() {
+      await client.post('/auth/logout')
+    },
     async getCurrentUser() {
       const response = await client.get<BackendUserResponse>('/users/me')
       return mapUser(response)
