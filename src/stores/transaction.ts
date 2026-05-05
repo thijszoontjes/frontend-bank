@@ -2,11 +2,11 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { services } from '@/services'
-import type { TransactionItem } from '@/types/transaction'
+import type { Transaction } from '@/types/transaction'
 import { toErrorMessage } from '@/utils/format'
 
 export const useTransactionStore = defineStore('transaction', () => {
-  const transactions = ref<TransactionItem[]>([])
+  const transactions = ref<Transaction[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -26,6 +26,24 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
+  async function loadByAccount(iban: string) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      transactions.value = await services.transaction.getTransactionsByAccount(iban)
+    } catch (caughtError) {
+      error.value = toErrorMessage(caughtError)
+      throw caughtError
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function add(transaction: Transaction) {
+    transactions.value.unshift(transaction)
+  }
+
   function clear() {
     transactions.value = []
     error.value = null
@@ -37,6 +55,8 @@ export const useTransactionStore = defineStore('transaction', () => {
     isLoading,
     error,
     load,
+    loadByAccount,
+    add,
     clear,
   }
 })

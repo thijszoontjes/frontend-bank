@@ -15,7 +15,7 @@ const { formatCurrency } = useCurrency()
 const { userId } = useCurrentUser()
 const transactionStore = useTransactionStore()
 
-const activeFilter = ref<'all' | 'completed' | 'pending' | 'flagged'>('all')
+const activeFilter = ref<'all' | 'COMPLETED' | 'REJECTED'>('all')
 
 const columns = [
   { key: 'description', label: 'Transaction' },
@@ -63,9 +63,8 @@ onMounted(loadTransactions)
 
     <div class="pill-filter" role="tablist" aria-label="Transaction status filter">
       <button :class="{ 'is-active': activeFilter === 'all' }" @click="activeFilter = 'all'">All</button>
-      <button :class="{ 'is-active': activeFilter === 'completed' }" @click="activeFilter = 'completed'">Completed</button>
-      <button :class="{ 'is-active': activeFilter === 'pending' }" @click="activeFilter = 'pending'">Pending</button>
-      <button :class="{ 'is-active': activeFilter === 'flagged' }" @click="activeFilter = 'flagged'">Flagged</button>
+      <button :class="{ 'is-active': activeFilter === 'COMPLETED' }" @click="activeFilter = 'COMPLETED'">Completed</button>
+      <button :class="{ 'is-active': activeFilter === 'REJECTED' }" @click="activeFilter = 'REJECTED'">Rejected</button>
     </div>
 
     <LoadingState

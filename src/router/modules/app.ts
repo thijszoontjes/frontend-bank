@@ -36,11 +36,11 @@ export const appRoutes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'transactions',
-        name: 'transactions',
-        component: () => import('@/views/app/TransactionsView.vue'),
+        path: 'accounts/:iban/transactions',
+        name: 'account-transactions',
+        component: () => import('@/views/app/AccountTransactionsView.vue'),
         meta: {
-          title: 'Transactions',
+          title: 'Account transactions',
           requiresAuth: true,
           roles: ['customer'],
         },
@@ -61,6 +61,16 @@ export const appRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/app/EmployeeUsersView.vue'),
         meta: {
           title: 'Users',
+          requiresAuth: true,
+          roles: ['employee'],
+        },
+      },
+      {
+        path: 'users/:userId/transactions',
+        name: 'customer-transactions',
+        component: () => import('@/views/app/CustomerTransactionsView.vue'),
+        meta: {
+          title: 'Customer transactions',
           requiresAuth: true,
           roles: ['employee'],
         },

@@ -1,16 +1,39 @@
-export type TransactionDirection = 'credit' | 'debit'
-export type TransactionStatus = 'completed' | 'pending' | 'flagged'
+export type TransactionType = 'TRANSFER' | 'ATM_DEPOSIT' | 'ATM_WITHDRAWAL'
+export type TransactionStatus = 'COMPLETED' | 'REJECTED'
+export type AccountType = 'CHECKING' | 'SAVINGS'
+export type InitiatorRole = 'CUSTOMER' | 'EMPLOYEE' | 'ATM'
 
-export interface TransactionItem {
-  id: string
-  userId: string
-  accountId: string
-  description: string
-  counterparty: string
-  category: string
-  amount: number
-  currency: string
-  direction: TransactionDirection
+export interface Transaction {
+  transactionId: number
+  transactionType: TransactionType
   status: TransactionStatus
-  bookedAt: string
+  amount: number
+  currency: 'EUR'
+  description?: string
+  createdAt: string
+
+  fromAccount: {
+    iban: string
+    accountType?: AccountType
+  }
+
+  toAccount: {
+    iban: string
+    accountType?: AccountType
+  }
+
+  initiator: {
+    userId: number
+    firstName?: string
+    lastName?: string
+    role: InitiatorRole
+  }
+}
+
+export interface CreateTransactionPayload {
+  fromAccountIban: string
+  toAccountIban: string
+  initiatorId: string
+  amount: number
+  description?: string
 }

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 import AppBadge from '@/components/ui/AppBadge.vue'
+import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppTable from '@/components/ui/AppTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -13,6 +15,7 @@ import { useAccountStore } from '@/stores/account'
 import { formatDateTime } from '@/utils/format'
 
 const { formatCurrency } = useCurrency()
+const router = useRouter()
 const { userId } = useCurrentUser()
 const accountStore = useAccountStore()
 
@@ -110,6 +113,15 @@ onMounted(() => void loadAccounts())
               <div class="row-between">
                 <span>Status</span>
                 <AppBadge :variant="statusVariant(account.status)">{{ account.status }}</AppBadge>
+              </div>
+              <div class="row-between" style="margin-top: 1rem;">
+                <AppButton
+                  variant="secondary"
+                  size="sm"
+                  @click="router.push({ name: 'account-transactions', params: { iban: account.iban } })"
+                >
+                  View transactions
+                </AppButton>
               </div>
             </div>
           </AppCard>

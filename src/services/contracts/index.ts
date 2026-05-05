@@ -1,7 +1,7 @@
 import type { ApprovalListResult, ApprovalPayload } from '@/types/approval'
 import type { AccountPortfolio } from '@/types/account'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
-import type { TransactionItem } from '@/types/transaction'
+import type { CreateTransactionPayload, Transaction } from '@/types/transaction'
 import type {
   EmployeeCreateCustomerPayload,
   UserListFilters,
@@ -22,7 +22,9 @@ export interface AccountService {
 }
 
 export interface TransactionService {
-  getTransactionsByUser(userId: string): Promise<TransactionItem[]>
+  getTransactionsByUser(userId: string): Promise<Transaction[]>
+  getTransactionsByAccount(iban: string): Promise<Transaction[]>
+  createTransaction(payload: CreateTransactionPayload): Promise<Transaction>
 }
 
 export interface ApprovalService {

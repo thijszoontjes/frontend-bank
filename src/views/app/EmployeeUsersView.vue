@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -20,6 +21,7 @@ type ApprovalFilterValue = 'all' | 'pending' | 'approved' | 'rejected'
 
 const pageSize = 20
 
+const router = useRouter()
 const users = ref<UserProfile[]>([])
 const pagination = ref<PageMetadata | null>(null)
 const listLoading = ref(false)
@@ -352,7 +354,17 @@ onMounted(() => void loadUsers())
                 {{ user.createdAt ? formatDateTime(user.createdAt) : 'Unknown' }}
               </span>
             </div>
-            <AppButton variant="secondary" size="sm" @click="loadUserDetail(user.id)">Open</AppButton>
+            <div style="display: flex; gap: 0.5rem;">
+              <AppButton
+                v-if="user.role === 'customer'"
+                variant="secondary"
+                size="sm"
+                @click="router.push({ name: 'customer-transactions', params: { userId: user.id } })"
+              >
+                View transactions
+              </AppButton>
+              <AppButton variant="secondary" size="sm" @click="loadUserDetail(user.id)">Open</AppButton>
+            </div>
           </div>
         </div>
 
