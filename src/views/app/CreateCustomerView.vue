@@ -53,6 +53,29 @@ function buildPayload(): EmployeeCreateCustomerPayload | null {
     return null
   }
 
+  const checkingAbsolute = Number(form.checkingAbsolute)
+  const checkingDaily = Number(form.checkingDaily)
+  const savingsAbsolute = Number(form.savingsAbsolute)
+  const savingsDaily = Number(form.savingsDaily)
+
+  const limitFields = [
+    form.checkingAbsolute,
+    form.checkingDaily,
+    form.savingsAbsolute,
+    form.savingsDaily,
+  ]
+  const limitValues = [checkingAbsolute, checkingDaily, savingsAbsolute, savingsDaily]
+
+  if (limitFields.some((value) => value.trim() === '') || !limitValues.every(Number.isFinite)) {
+    error.value = 'Use valid numeric limits.'
+    return null
+  }
+
+  if (checkingDaily < 0 || savingsDaily < 0) {
+    error.value = 'Daily limits cannot be negative.'
+    return null
+  }
+
   const payload: EmployeeCreateCustomerPayload = {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
@@ -61,25 +84,13 @@ function buildPayload(): EmployeeCreateCustomerPayload | null {
     password: form.password,
     bsn: form.bsn.trim(),
     checkingAccount: {
-      absoluteLimit: Number(form.checkingAbsolute),
-      dailyLimit: Number(form.checkingDaily),
+      absoluteLimit: checkingAbsolute,
+      dailyLimit: checkingDaily,
     },
     savingsAccount: {
-      absoluteLimit: Number(form.savingsAbsolute),
-      dailyLimit: Number(form.savingsDaily),
+      absoluteLimit: savingsAbsolute,
+      dailyLimit: savingsDaily,
     },
-  }
-
-  const values = [
-    payload.checkingAccount.absoluteLimit,
-    payload.checkingAccount.dailyLimit,
-    payload.savingsAccount.absoluteLimit,
-    payload.savingsAccount.dailyLimit,
-  ]
-
-  if (values.some((value) => Number.isNaN(value))) {
-    error.value = 'Use valid numeric limits.'
-    return null
   }
 
   return payload
@@ -128,12 +139,12 @@ async function handleSubmit() {
         <AppInput v-model="form.password" label="Password" type="password" autocomplete="new-password" />
       </div>
       <div class="inline-form-row" style="margin-top: 1rem;">
-        <AppInput v-model="form.checkingAbsolute" label="Checking absolute limit" />
-        <AppInput v-model="form.checkingDaily" label="Checking daily limit" />
+        <AppInput v-model="form.checkingAbsolute" label="Checking absolute limit" type="number" />
+        <AppInput v-model="form.checkingDaily" label="Checking daily limit" type="number" />
       </div>
       <div class="inline-form-row" style="margin-top: 1rem;">
-        <AppInput v-model="form.savingsAbsolute" label="Savings absolute limit" />
-        <AppInput v-model="form.savingsDaily" label="Savings daily limit" />
+        <AppInput v-model="form.savingsAbsolute" label="Savings absolute limit" type="number" />
+        <AppInput v-model="form.savingsDaily" label="Savings daily limit" type="number" />
       </div>
 
       <span v-if="error" class="input-error" style="display: block; margin-top: 1rem;">{{ error }}</span>

@@ -55,6 +55,13 @@ const editForm = reactive({
   phoneNumber: '',
 })
 
+const limitForm = reactive({
+  checkingAbsolute: '',
+  checkingDaily: '',
+  savingsAbsolute: '',
+  savingsDaily: '',
+})
+
 function parseToggle(value: FilterValue) {
   if (value === 'all') {
     return undefined
@@ -78,6 +85,51 @@ function syncEditForm(user: UserProfile) {
   editForm.lastName = user.lastName
   editForm.email = user.email
   editForm.phoneNumber = user.phoneNumber ?? ''
+}
+
+function syncLimitForm(accounts: BankAccount[]) {
+  const checkingAccount = accounts.find((account) => account.type === 'checking')
+  const savingsAccount = accounts.find((account) => account.type === 'savings')
+
+  limitForm.checkingAbsolute = checkingAccount?.absoluteLimit?.toString() ?? ''
+  limitForm.checkingDaily = checkingAccount?.dailyLimit?.toString() ?? ''
+  limitForm.savingsAbsolute = savingsAccount?.absoluteLimit?.toString() ?? ''
+  limitForm.savingsDaily = savingsAccount?.dailyLimit?.toString() ?? ''
+}
+
+function buildAccountPayload() {
+  const checkingAbsolute = Number(limitForm.checkingAbsolute)
+  const checkingDaily = Number(limitForm.checkingDaily)
+  const savingsAbsolute = Number(limitForm.savingsAbsolute)
+  const savingsDaily = Number(limitForm.savingsDaily)
+  const fields = [
+    limitForm.checkingAbsolute,
+    limitForm.checkingDaily,
+    limitForm.savingsAbsolute,
+    limitForm.savingsDaily,
+  ]
+  const values = [checkingAbsolute, checkingDaily, savingsAbsolute, savingsDaily]
+
+  if (fields.some((value) => value.trim() === '') || !values.every(Number.isFinite)) {
+    actionError.value = 'Use valid numeric account limits.'
+    return null
+  }
+
+  if (checkingDaily < 0 || savingsDaily < 0) {
+    actionError.value = 'Daily limits cannot be negative.'
+    return null
+  }
+
+  return {
+    checkingAccount: {
+      absoluteLimit: checkingAbsolute,
+      dailyLimit: checkingDaily,
+    },
+    savingsAccount: {
+      absoluteLimit: savingsAbsolute,
+      dailyLimit: savingsDaily,
+    },
+  }
 }
 
 function updateUserInList(nextUser: UserProfile) {
@@ -147,18 +199,22 @@ async function loadUserDetail(userId: string) {
 
     if (!user.approved || user.deletedAt) {
       selectedAccounts.value = []
+      syncLimitForm([])
       return
     }
 
     try {
       const portfolio = await services.account.getAccountPortfolio(userId)
       selectedAccounts.value = portfolio.accounts
+      syncLimitForm(portfolio.accounts)
     } catch {
       selectedAccounts.value = []
+      syncLimitForm([])
     }
   } catch (caughtError) {
     selectedUser.value = null
     selectedAccounts.value = []
+    syncLimitForm([])
     detailError.value = toErrorMessage(caughtError)
   } finally {
     detailLoading.value = false
@@ -186,6 +242,17 @@ async function handleSave() {
     phoneNumber: editForm.phoneNumber.trim(),
   }
 
+  if (selectedAccounts.value.length > 0) {
+    const accountPayload = buildAccountPayload()
+
+    if (!accountPayload) {
+      return
+    }
+
+    payload.checkingAccount = accountPayload.checkingAccount
+    payload.savingsAccount = accountPayload.savingsAccount
+  }
+
   activeAction.value = 'save'
   actionError.value = ''
   actionMessage.value = ''
@@ -194,6 +261,11 @@ async function handleSave() {
     const updatedUser = await services.user.updateUser(selectedUser.value.id, payload)
     selectedUser.value = updatedUser
     updateUserInList(updatedUser)
+    if (selectedAccounts.value.length > 0) {
+      const portfolio = await services.account.getAccountPortfolio(selectedUser.value.id)
+      selectedAccounts.value = portfolio.accounts
+      syncLimitForm(portfolio.accounts)
+    }
     actionMessage.value = 'User details updated.'
   } catch (caughtError) {
     actionError.value = toErrorMessage(caughtError)
@@ -412,6 +484,16 @@ onMounted(() => void loadUsers())
             <AppInput v-model="editForm.email" label="Email" type="email" />
             <AppInput v-model="editForm.phoneNumber" label="Phone number" />
           </div>
+          <template v-if="selectedAccounts.length > 0">
+            <div class="inline-form-row">
+              <AppInput v-model="limitForm.checkingAbsolute" label="Checking absolute limit" type="number" />
+              <AppInput v-model="limitForm.checkingDaily" label="Checking daily limit" type="number" />
+            </div>
+            <div class="inline-form-row">
+              <AppInput v-model="limitForm.savingsAbsolute" label="Savings absolute limit" type="number" />
+              <AppInput v-model="limitForm.savingsDaily" label="Savings daily limit" type="number" />
+            </div>
+          </template>
 
           <div class="button-group">
             <AppButton variant="secondary" :disabled="activeAction === 'save'" @click="handleSave()">
@@ -470,6 +552,9 @@ onMounted(() => void loadUsers())
               <strong>{{ formatCurrency(account.availableBalance, account.currency) }}</strong>
               <span style="color: var(--color-text-muted); font-size: 0.92rem;">
                 Daily {{ formatCurrency(account.dailyLimit ?? 0, account.currency) }}
+              </span>
+              <span style="color: var(--color-text-muted); font-size: 0.92rem;">
+                Absolute {{ formatCurrency(account.absoluteLimit ?? 0, account.currency) }}
               </span>
             </div>
           </div>

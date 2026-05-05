@@ -51,4 +51,6 @@ export interface UserUpdatePayload {
   lastName?: string
   email?: string
   phoneNumber?: string
+  checkingAccount?: AccountConfigRequest
+  savingsAccount?: AccountConfigRequest
 }
