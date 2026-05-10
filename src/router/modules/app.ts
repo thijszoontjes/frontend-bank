@@ -46,6 +46,16 @@ export const appRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'atm',
+        name: 'atm',
+        component: () => import('@/views/app/ATMView.vue'),
+        meta: {
+          title: 'ATM',
+          requiresAuth: true,
+          roles: ['customer'],
+        },
+      },
+      {
         path: 'approvals',
         name: 'approvals',
         component: () => import('@/views/app/PendingApprovalsView.vue'),

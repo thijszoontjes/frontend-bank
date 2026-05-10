@@ -1,5 +1,6 @@
 import type { ApprovalListResult, ApprovalPayload } from '@/types/approval'
 import type { AccountPortfolio } from '@/types/account'
+import type { AtmDepositPayload, AtmTransactionResult, AtmWithdrawPayload } from '@/types/atm'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
 import type { CreateTransactionPayload, Transaction } from '@/types/transaction'
 import type {
@@ -19,6 +20,11 @@ export interface AuthService {
 
 export interface AccountService {
   getAccountPortfolio(userId: string): Promise<AccountPortfolio>
+}
+
+export interface AtmService {
+  deposit(payload: AtmDepositPayload): Promise<AtmTransactionResult>
+  withdraw(payload: AtmWithdrawPayload): Promise<AtmTransactionResult>
 }
 
 export interface TransactionService {
@@ -46,6 +52,7 @@ export interface UserManagementService {
 export interface ServiceRegistry {
   auth: AuthService
   account: AccountService
+  atm: AtmService
   transaction: TransactionService
   approval: ApprovalService
   user: UserManagementService
