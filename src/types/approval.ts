@@ -8,7 +8,6 @@ export interface ApprovalItem {
   phoneNumber?: string
   bsn?: string
   createdAt?: string
-  reason: string
 }
 
 export interface AccountConfigRequest {
@@ -19,6 +18,10 @@ export interface AccountConfigRequest {
 export interface ApprovalPayload {
   checkingAccount: AccountConfigRequest
   savingsAccount: AccountConfigRequest
+}
+
+export interface RejectApprovalPayload {
+  reason?: string
 }
 
 export interface ApprovalListResult {

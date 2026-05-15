@@ -23,18 +23,7 @@ function mapRoleParam(role: UserListFilters['role']) {
 }
 
 function mapApprovalStatusParam(status: UserListFilters['approvalStatus']) {
-  if (!status) {
-    return null
-  }
-
-  switch (status) {
-    case 'approved':
-      return 'APPROVED'
-    case 'rejected':
-      return 'REJECTED'
-    default:
-      return 'PENDING'
-  }
+  return status ?? null
 }
 
 function buildUserQuery(page: number, size: number, filters: UserListFilters = {}) {

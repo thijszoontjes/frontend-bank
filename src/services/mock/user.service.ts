@@ -208,7 +208,6 @@ export function createMockUserManagementService(): UserManagementService {
 
       user.deletedAt = new Date().toISOString()
       user.active = false
-      mockDb.approvals = mockDb.approvals.filter((approval) => approval.id !== userId)
     },
     async blockUser(userId) {
       await simulateDelay(150)

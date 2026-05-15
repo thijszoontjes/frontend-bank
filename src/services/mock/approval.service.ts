@@ -1,16 +1,31 @@
 import type { ApprovalService } from '@/services/contracts'
+import type { ApprovalItem } from '@/types/approval'
 
 import { mockDb } from './db'
 import { simulateDelay } from './shared'
 
-function findApproval(id: string) {
-  const approval = mockDb.approvals.find((entry) => entry.id === id)
+function findPendingCustomer(id: string) {
+  const user = mockDb.users.find(
+    (entry) => entry.id === id && entry.role === 'customer' && entry.approvalStatus === 'pending',
+  )
 
-  if (!approval) {
+  if (!user) {
     throw new Error('Approval not found in mock dataset.')
   }
 
-  return approval
+  return user
+}
+
+function mapApprovalItem(user: (typeof mockDb.users)[number]): ApprovalItem {
+  return {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    bsn: user.bsn,
+    createdAt: user.createdAt,
+  }
 }
 
 function createApprovedAccount(
@@ -41,21 +56,23 @@ export function createMockApprovalService(): ApprovalService {
     async getPendingApprovals(page = 0, size = 20) {
       await simulateDelay()
       const start = page * size
-      const items = mockDb.approvals.slice(start, start + size)
+      const pendingUsers = mockDb.users.filter(
+        (entry) => entry.role === 'customer' && entry.approvalStatus === 'pending' && !entry.deletedAt,
+      )
 
       return {
-        items,
+        items: pendingUsers.slice(start, start + size).map(mapApprovalItem),
         page: {
           page,
           size,
-          totalElements: mockDb.approvals.length,
-          totalPages: Math.max(1, Math.ceil(mockDb.approvals.length / size)),
+          totalElements: pendingUsers.length,
+          totalPages: Math.max(1, Math.ceil(pendingUsers.length / size)),
         },
       }
     },
     async approveApproval(id: string, payload) {
       await simulateDelay(200)
-      findApproval(id)
+      findPendingCustomer(id)
       const user = mockDb.users.find((entry) => entry.id === id)
 
       if (user) {
@@ -79,17 +96,15 @@ export function createMockApprovalService(): ApprovalService {
         )
       }
 
-      mockDb.approvals = mockDb.approvals.filter((approval) => approval.id !== id)
     },
     async rejectApproval(id: string) {
       await simulateDelay(200)
-      findApproval(id)
+      findPendingCustomer(id)
       const user = mockDb.users.find((entry) => entry.id === id)
       if (user) {
         user.approved = false
         user.approvalStatus = 'rejected'
       }
-      mockDb.approvals = mockDb.approvals.filter((approval) => approval.id !== id)
     },
   }
 }
