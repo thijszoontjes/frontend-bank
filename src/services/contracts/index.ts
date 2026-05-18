@@ -36,7 +36,7 @@ export interface TransactionService {
 export interface ApprovalService {
   getPendingApprovals(page?: number, size?: number): Promise<ApprovalListResult>
   approveApproval(userId: string, payload: ApprovalPayload): Promise<void>
-  rejectApproval(userId: string): Promise<void>
+  rejectApproval(userId: string, reason?: string): Promise<void>
 }
 
 export interface UserManagementService {

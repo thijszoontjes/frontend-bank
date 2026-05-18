@@ -39,8 +39,8 @@ export const useApprovalStore = defineStore('approval', () => {
     approvals.value = approvals.value.filter((approval) => approval.id !== userId)
   }
 
-  async function reject(userId: string) {
-    await services.approval.rejectApproval(userId)
+  async function reject(userId: string, reason?: string) {
+    await services.approval.rejectApproval(userId, reason)
     approvals.value = approvals.value.filter((approval) => approval.id !== userId)
   }
 

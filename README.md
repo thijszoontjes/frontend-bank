@@ -23,7 +23,7 @@ Create a local `.env` file based on `.env.example`.
 
 - `VITE_API_MODE=mock` uses in-memory mock services.
 - `VITE_API_MODE=live` switches the service resolver to HTTP services.
-- `VITE_API_BASE_URL` points to the Spring Boot API base path.
+- `VITE_API_BASE_URL` points to the Spring Boot API base path including `/api/v1`.
 
 ## Architecture
 

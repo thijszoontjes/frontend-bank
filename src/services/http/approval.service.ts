@@ -6,10 +6,7 @@ import { mapUser } from '@/services/http/user.mapper'
 import type { BackendUserResponse } from '@/services/http/user.mapper'
 
 interface PendingApprovalsResponse {
-  items: Array<{
-    user: BackendUserResponse
-    reason: string
-  }>
+  items: BackendUserResponse[]
   page: PageMetadata
 }
 
@@ -17,12 +14,12 @@ export function createHttpApprovalService(client: HttpClient): ApprovalService {
   return {
     async getPendingApprovals(page = 0, size = 20) {
       const response = await client.get<PendingApprovalsResponse>(
-        `/users/pending-approval?page=${page}&size=${size}`,
+        `/users?role=CUSTOMER&approvalStatus=pending&page=${page}&size=${size}`,
       )
 
       return {
-        items: response.items.map((item) => {
-          const user = mapUser(item.user)
+        items: response.items.map((pendingUser) => {
+          const user = mapUser(pendingUser)
 
           return {
             id: user.id,
@@ -32,7 +29,6 @@ export function createHttpApprovalService(client: HttpClient): ApprovalService {
             phoneNumber: user.phoneNumber,
             bsn: user.bsn,
             createdAt: user.createdAt,
-            reason: item.reason,
           } satisfies ApprovalItem
         }),
         page: response.page,
@@ -41,8 +37,8 @@ export function createHttpApprovalService(client: HttpClient): ApprovalService {
     async approveApproval(userId, payload) {
       await client.post(`/users/${userId}/approval`, payload)
     },
-    async rejectApproval(userId) {
-      await client.post(`/users/${userId}/reject`)
+    async rejectApproval(userId, reason) {
+      await client.post(`/users/${userId}/reject`, reason ? { reason } : undefined)
     },
   }
 }
