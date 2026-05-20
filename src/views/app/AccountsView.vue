@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
-import AppTable from '@/components/ui/AppTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -18,15 +17,6 @@ const { formatCurrency } = useCurrency()
 const router = useRouter()
 const { userId } = useCurrentUser()
 const accountStore = useAccountStore()
-
-const columns = [
-  { key: 'name', label: 'Account' },
-  { key: 'type', label: 'Type' },
-  { key: 'availableBalance', label: 'Balance' },
-  { key: 'dailyLimit', label: 'Daily limit' },
-  { key: 'status', label: 'Status' },
-  { key: 'updatedAt', label: 'Created' },
-]
 
 async function loadAccounts() {
   if (!userId.value) {
@@ -60,7 +50,14 @@ onMounted(() => void loadAccounts())
     <PageHeader
       title="Accounts overview"
       description="Personal account information, bank accounts, and balances for the signed-in customer."
-    />
+    >
+      <template #actions v-if="accountStore.summary">
+        <div class="page-header-balance">
+          <span class="page-header-balance__label">Total balance</span>
+          <strong class="page-header-balance__value">{{ formatCurrency(accountStore.summary.totalBalance) }}</strong>
+        </div>
+      </template>
+    </PageHeader>
 
     <LoadingState v-if="accountStore.isLoading && accountStore.accounts.length === 0" label="Loading account portfolio..." />
 
@@ -71,17 +68,6 @@ onMounted(() => void loadAccounts())
     />
 
     <template v-else>
-      <div class="grid-three" v-if="accountStore.summary">
-        <AppCard title="Total balance">
-          <p class="metric-value">{{ formatCurrency(accountStore.summary.totalBalance) }}</p>
-        </AppCard>
-        <AppCard title="Available balance">
-          <p class="metric-value">{{ formatCurrency(accountStore.summary.liquidBalance) }}</p>
-        </AppCard>
-        <AppCard title="Accounts">
-          <p class="metric-value">{{ accountStore.summary.accountsCount }}</p>
-        </AppCard>
-      </div>
 
       <EmptyState
         v-if="accountStore.accounts.length === 0"
@@ -114,6 +100,10 @@ onMounted(() => void loadAccounts())
                 <span>Status</span>
                 <AppBadge :variant="statusVariant(account.status)">{{ account.status }}</AppBadge>
               </div>
+                <div class="row-between">
+                  <span>Opened on</span>
+                  <strong>{{ formatDateTime(account.createdAt) }}</strong>
+                </div>
               <div class="row-between" style="margin-top: 1rem;">
                 <AppButton
                   variant="secondary"
@@ -126,31 +116,29 @@ onMounted(() => void loadAccounts())
             </div>
           </AppCard>
         </div>
-
-        <AppTable :columns="columns" :rows="accountStore.accounts as unknown as Record<string, unknown>[]">
-          <template #cell-name="{ row }">
-            <div class="table-meta">
-              <strong>{{ row.name }}</strong>
-              <span>{{ row.iban }}</span>
-            </div>
-          </template>
-          <template #cell-type="{ value }">
-            <span style="text-transform: capitalize;">{{ value }}</span>
-          </template>
-          <template #cell-availableBalance="{ row }">
-            <strong>{{ formatCurrency(Number(row.availableBalance), String(row.currency)) }}</strong>
-          </template>
-          <template #cell-dailyLimit="{ row }">
-            {{ formatCurrency(Number(row.dailyLimit ?? 0), String(row.currency)) }}
-          </template>
-          <template #cell-status="{ value }">
-            <AppBadge :variant="statusVariant(String(value))">{{ value }}</AppBadge>
-          </template>
-          <template #cell-updatedAt="{ value }">
-            {{ formatDateTime(String(value)) }}
-          </template>
-        </AppTable>
       </template>
     </template>
   </div>
 </template>
+
+<style scoped>
+.page-header-balance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+}
+
+.page-header-balance__label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.page-header-balance__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text, #111827);
+}
+</style>

@@ -5,7 +5,7 @@ import { simulateDelay } from './shared'
 
 function buildSummary(userId: string) {
   const accounts = mockDb.accounts.filter((account) => account.userId === userId)
-  const totalBalance = accounts.reduce((sum, account) => sum + account.ledgerBalance, 0)
+  const totalBalance = accounts.reduce((sum, account) => sum + account.availableBalance, 0)
   const liquidBalance = accounts.reduce((sum, account) => sum + account.availableBalance, 0)
 
   return {
