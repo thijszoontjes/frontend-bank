@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -19,7 +19,7 @@ type FilterValue = 'all' | 'yes' | 'no'
 type RoleFilterValue = 'all' | 'customer' | 'employee'
 type ApprovalFilterValue = 'all' | 'pending' | 'approved' | 'rejected'
 
-const pageSize = 20
+const pageSize = 15
 
 const router = useRouter()
 const users = ref<UserProfile[]>([])
@@ -33,6 +33,7 @@ const detailError = ref('')
 const actionError = ref('')
 const actionMessage = ref('')
 const activeAction = ref<string | null>(null)
+const isDetailModalOpen = ref(false)
 
 const filters = reactive<{
   role: RoleFilterValue
@@ -136,6 +137,17 @@ function updateUserInList(nextUser: UserProfile) {
   users.value = users.value.map((entry) => (entry.id === nextUser.id ? nextUser : entry))
 }
 
+const pageSummary = computed(() => {
+  if (!pagination.value || pagination.value.totalElements === 0) {
+    return '0 users'
+  }
+
+  const start = (pagination.value.page ?? 0) * (pagination.value.size ?? pageSize) + 1
+  const end = Math.min(start + users.value.length - 1, pagination.value.totalElements)
+
+  return `${start}-${end} of ${pagination.value.totalElements} users`
+})
+
 function statusVariant(user: UserProfile) {
   if (user.deletedAt) {
     return 'danger'
@@ -219,6 +231,19 @@ async function loadUserDetail(userId: string) {
   } finally {
     detailLoading.value = false
   }
+}
+
+async function openUserDetail(userId: string) {
+  isDetailModalOpen.value = true
+  await loadUserDetail(userId)
+}
+
+function closeUserDetail() {
+  if (activeAction.value) {
+    return
+  }
+
+  isDetailModalOpen.value = false
 }
 
 async function refreshCurrentPage() {
@@ -342,105 +367,155 @@ onMounted(() => void loadUsers())
 
 <template>
   <div class="page-stack">
-    <PageHeader title="Users" description="Find users and manage their details or status.">
+    <PageHeader title="Users" description="Manage customers and employees from one scalable employee overview.">
       <template #actions>
         <AppButton variant="secondary" @click="refreshCurrentPage()">Refresh</AppButton>
       </template>
     </PageHeader>
 
-    <div class="grid-two">
-      <AppCard title="Filters">
-        <div class="grid-two">
-          <label class="input-group">
-            <span class="input-label">Role</span>
-            <select v-model="filters.role" class="input-control">
-              <option value="all">All</option>
-              <option value="customer">Customer</option>
-              <option value="employee">Employee</option>
-            </select>
-          </label>
-          <label class="input-group">
-            <span class="input-label">Approval</span>
-            <select v-model="filters.approvalStatus" class="input-control">
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </label>
-          <label class="input-group">
-            <span class="input-label">Blocked</span>
-            <select v-model="filters.blocked" class="input-control">
-              <option value="all">All</option>
-              <option value="yes">Blocked</option>
-              <option value="no">Not blocked</option>
-            </select>
-          </label>
-          <label class="input-group">
-            <span class="input-label">Employee created</span>
-            <select v-model="filters.employeeCreated" class="input-control">
-              <option value="all">All</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </label>
-          <label class="input-group">
-            <span class="input-label">Include deleted</span>
-            <select v-model="filters.includeDeleted" class="input-control">
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </label>
+    <AppCard title="User directory" :subtitle="pageSummary">
+      <template #actions>
+        <div class="directory-actions">
+          <AppButton variant="secondary" size="sm" :disabled="listLoading" @click="loadUsers(0)">Apply filters</AppButton>
         </div>
+      </template>
 
-        <div class="button-group" style="margin-top: 1rem;">
-          <AppButton variant="secondary" :disabled="listLoading" @click="loadUsers(0)">Apply</AppButton>
-        </div>
-        <span v-if="listError" class="input-error" style="display: block; margin-top: 1rem;">{{ listError }}</span>
-      </AppCard>
+      <div class="directory-filters">
+        <label class="input-group">
+          <span class="input-label">Role</span>
+          <select v-model="filters.role" class="input-control">
+            <option value="all">All</option>
+            <option value="customer">Customer</option>
+            <option value="employee">Employee</option>
+          </select>
+        </label>
+        <label class="input-group">
+          <span class="input-label">Approval</span>
+          <select v-model="filters.approvalStatus" class="input-control">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </label>
+        <label class="input-group">
+          <span class="input-label">Blocked</span>
+          <select v-model="filters.blocked" class="input-control">
+            <option value="all">All</option>
+            <option value="yes">Blocked</option>
+            <option value="no">Not blocked</option>
+          </select>
+        </label>
+        <label class="input-group">
+          <span class="input-label">Created by employee</span>
+          <select v-model="filters.employeeCreated" class="input-control">
+            <option value="all">All</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </label>
+        <label class="input-group">
+          <span class="input-label">Deleted users</span>
+          <select v-model="filters.includeDeleted" class="input-control">
+            <option value="no">Hide</option>
+            <option value="yes">Show</option>
+          </select>
+        </label>
+      </div>
 
-      <AppCard title="Users">
-        <LoadingState v-if="listLoading && users.length === 0" label="Loading users..." />
+      <span v-if="listError" class="input-error directory-error">{{ listError }}</span>
 
-        <EmptyState
-          v-else-if="users.length === 0"
-          title="No users found"
-          description="Adjust the filters or refresh the list."
-        />
+      <LoadingState v-if="listLoading && users.length === 0" label="Loading users..." />
 
-        <div v-else class="stack-sm">
-          <div
-            v-for="user in users"
-            :key="user.id"
-            class="helper-item"
-            style="align-items: start;"
-          >
-            <div style="display: grid; gap: 0.35rem;">
-              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
-                <strong>{{ user.firstName }} {{ user.lastName }}</strong>
-                <AppBadge :variant="user.role === 'employee' ? 'info' : 'neutral'">{{ user.role }}</AppBadge>
-                <AppBadge :variant="statusVariant(user)">{{ statusLabel(user) }}</AppBadge>
-              </div>
-              <span style="color: var(--color-text-muted); font-size: 0.92rem;">{{ user.email }}</span>
-              <span style="color: var(--color-text-muted); font-size: 0.92rem;">
-                {{ user.createdAt ? formatDateTime(user.createdAt) : 'Unknown' }}
-              </span>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <AppButton
-                v-if="user.role === 'customer'"
-                variant="secondary"
-                size="sm"
-                @click="router.push({ name: 'customer-transactions', params: { userId: user.id } })"
+      <EmptyState
+        v-else-if="users.length === 0"
+        title="No users found"
+        description="Adjust the filters or refresh the list."
+      />
+
+      <div v-else class="users-table-shell" :class="{ 'is-refreshing': listLoading }">
+        <div class="users-table-wrap">
+          <table class="table users-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Phone</th>
+                <th>Created</th>
+                <th class="users-table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="user in users"
+                :key="user.id"
+                class="user-row"
+                tabindex="0"
+                @click="openUserDetail(user.id)"
+                @keydown.enter="openUserDetail(user.id)"
               >
-                View transactions
-              </AppButton>
-              <AppButton variant="secondary" size="sm" @click="loadUserDetail(user.id)">Open</AppButton>
-            </div>
+                <td>
+                  <div class="user-cell">
+                    <span class="user-avatar">{{ user.initials }}</span>
+                    <span>
+                      <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+                      <small>{{ user.email }}</small>
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <AppBadge :variant="user.role === 'employee' ? 'info' : 'neutral'">{{ user.role }}</AppBadge>
+                </td>
+                <td>
+                  <AppBadge :variant="statusVariant(user)">{{ statusLabel(user) }}</AppBadge>
+                </td>
+                <td>{{ user.phoneNumber || '-' }}</td>
+                <td>{{ user.createdAt ? formatDateTime(user.createdAt) : 'Unknown' }}</td>
+                <td>
+                  <div class="row-actions">
+                    <AppButton
+                      v-if="user.role === 'customer'"
+                      variant="secondary"
+                      size="sm"
+                      @click.stop="router.push({ name: 'customer-transactions', params: { userId: user.id } })"
+                    >
+                      Transactions
+                    </AppButton>
+                    <AppButton variant="secondary" size="sm" @click.stop="openUserDetail(user.id)">Edit</AppButton>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-footer" v-if="pagination">
+          <span>{{ pageSummary }}</span>
+          <div class="button-group">
+            <AppButton
+              variant="secondary"
+              size="sm"
+              :disabled="listLoading || (pagination.page ?? 0) === 0"
+              @click="loadUsers((pagination.page ?? 0) - 1)"
+            >
+              Previous
+            </AppButton>
+            <AppButton
+              variant="secondary"
+              size="sm"
+              :disabled="listLoading || (pagination.page ?? 0) + 1 >= (pagination.totalPages ?? 1)"
+              @click="loadUsers((pagination.page ?? 0) + 1)"
+            >
+              Next
+            </AppButton>
           </div>
         </div>
+      </div>
 
-        <div class="button-group" v-if="pagination" style="margin-top: 1rem;">
+      <div v-if="users.length === 0 && pagination" class="table-footer">
+        <span>{{ pageSummary }}</span>
+        <div class="button-group">
           <AppButton
             variant="secondary"
             size="sm"
@@ -458,108 +533,415 @@ onMounted(() => void loadUsers())
             Next
           </AppButton>
         </div>
-      </AppCard>
-    </div>
+      </div>
+    </AppCard>
 
-    <div class="grid-two">
-      <AppCard :title="selectedUser ? 'Details' : 'Details'" :subtitle="selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : 'Select a user'">
+    <div v-if="isDetailModalOpen" class="modal-backdrop" @click.self="closeUserDetail()">
+      <section class="user-modal" role="dialog" aria-modal="true" aria-labelledby="user-modal-title">
+        <header class="modal-header">
+          <div>
+            <span class="modal-eyebrow">User details</span>
+            <h3 id="user-modal-title">
+              {{ selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : 'Loading user' }}
+            </h3>
+          </div>
+          <button class="modal-close" type="button" aria-label="Close user details" @click="closeUserDetail()">x</button>
+        </header>
+
         <LoadingState v-if="detailLoading" label="Loading user details..." />
 
         <EmptyState
           v-else-if="!selectedUser"
-          title="No user selected"
-          description="Choose a user on the left to view details."
+          title="Unable to load user"
+          :description="detailError || 'Try opening the user again.'"
         />
 
-        <div v-else class="stack-sm">
-          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-            <AppBadge :variant="selectedUser.role === 'employee' ? 'info' : 'neutral'">{{ selectedUser.role }}</AppBadge>
-            <AppBadge :variant="statusVariant(selectedUser)">{{ statusLabel(selectedUser) }}</AppBadge>
-          </div>
-          <div class="inline-form-row">
-            <AppInput v-model="editForm.firstName" label="First name" />
-            <AppInput v-model="editForm.lastName" label="Last name" />
-          </div>
-          <div class="inline-form-row">
-            <AppInput v-model="editForm.email" label="Email" type="email" />
-            <AppInput v-model="editForm.phoneNumber" label="Phone number" />
-          </div>
-          <template v-if="selectedAccounts.length > 0">
+        <div v-else class="modal-content">
+          <section class="modal-panel">
+            <div class="detail-heading">
+              <span class="user-avatar user-avatar--large">{{ selectedUser.initials }}</span>
+              <div>
+                <strong>{{ selectedUser.firstName }} {{ selectedUser.lastName }}</strong>
+                <span>{{ selectedUser.email }}</span>
+              </div>
+            </div>
+
+            <div class="badge-row">
+              <AppBadge :variant="selectedUser.role === 'employee' ? 'info' : 'neutral'">{{ selectedUser.role }}</AppBadge>
+              <AppBadge :variant="statusVariant(selectedUser)">{{ statusLabel(selectedUser) }}</AppBadge>
+            </div>
+
+            <div class="detail-list">
+              <div>
+                <span>BSN</span>
+                <strong>{{ selectedUser.bsn || '-' }}</strong>
+              </div>
+              <div>
+                <span>Created</span>
+                <strong>{{ selectedUser.createdAt ? formatDateTime(selectedUser.createdAt) : 'Unknown' }}</strong>
+              </div>
+              <div>
+                <span>Employee created</span>
+                <strong>{{ selectedUser.employeeCreated ? 'Yes' : 'No' }}</strong>
+              </div>
+            </div>
+
+            <div class="accounts-list">
+              <h4>Accounts</h4>
+              <EmptyState
+                v-if="selectedAccounts.length === 0"
+                title="No accounts"
+                description="There are no accounts available for this user."
+              />
+              <div v-else class="stack-sm">
+                <div v-for="account in selectedAccounts" :key="account.id" class="account-item">
+                  <div>
+                    <strong>{{ account.name }}</strong>
+                    <span>{{ account.iban }}</span>
+                  </div>
+                  <div>
+                    <strong>{{ formatCurrency(account.availableBalance, account.currency) }}</strong>
+                    <span>Daily {{ formatCurrency(account.dailyLimit ?? 0, account.currency) }}</span>
+                    <span>Absolute {{ formatCurrency(account.absoluteLimit ?? 0, account.currency) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="modal-panel modal-panel--form">
+            <h4>Edit user</h4>
             <div class="inline-form-row">
-              <AppInput v-model="limitForm.checkingAbsolute" label="Checking absolute limit" type="number" />
-              <AppInput v-model="limitForm.checkingDaily" label="Checking daily limit" type="number" />
+              <AppInput v-model="editForm.firstName" label="First name" />
+              <AppInput v-model="editForm.lastName" label="Last name" />
             </div>
             <div class="inline-form-row">
-              <AppInput v-model="limitForm.savingsAbsolute" label="Savings absolute limit" type="number" />
-              <AppInput v-model="limitForm.savingsDaily" label="Savings daily limit" type="number" />
+              <AppInput v-model="editForm.email" label="Email" type="email" />
+              <AppInput v-model="editForm.phoneNumber" label="Phone number" />
             </div>
-          </template>
+            <template v-if="selectedAccounts.length > 0">
+              <h4>Account limits</h4>
+              <div class="inline-form-row">
+                <AppInput v-model="limitForm.checkingAbsolute" label="Checking absolute limit" type="number" />
+                <AppInput v-model="limitForm.checkingDaily" label="Checking daily limit" type="number" />
+              </div>
+              <div class="inline-form-row">
+                <AppInput v-model="limitForm.savingsAbsolute" label="Savings absolute limit" type="number" />
+                <AppInput v-model="limitForm.savingsDaily" label="Savings daily limit" type="number" />
+              </div>
+            </template>
 
-          <div class="button-group">
-            <AppButton variant="secondary" :disabled="activeAction === 'save'" @click="handleSave()">
-              {{ activeAction === 'save' ? 'Saving...' : 'Save' }}
-            </AppButton>
-            <AppButton
-              v-if="!selectedUser.blocked && !selectedUser.deletedAt"
-              variant="danger"
-              :disabled="activeAction === 'block'"
-              @click="handleBlock()"
-            >
-              {{ activeAction === 'block' ? 'Blocking...' : 'Block' }}
-            </AppButton>
-            <AppButton
-              v-if="selectedUser.blocked && !selectedUser.deletedAt"
-              variant="secondary"
-              :disabled="activeAction === 'unblock'"
-              @click="handleUnblock()"
-            >
-              {{ activeAction === 'unblock' ? 'Unblocking...' : 'Unblock' }}
-            </AppButton>
-            <AppButton
-              v-if="!selectedUser.deletedAt"
-              variant="ghost"
-              :disabled="activeAction === 'delete'"
-              @click="handleDelete()"
-            >
-              {{ activeAction === 'delete' ? 'Deleting...' : 'Soft delete' }}
-            </AppButton>
-          </div>
+            <div class="modal-actions">
+              <AppButton variant="secondary" :disabled="activeAction === 'save'" @click="handleSave()">
+                {{ activeAction === 'save' ? 'Saving...' : 'Save changes' }}
+              </AppButton>
+              <AppButton
+                v-if="!selectedUser.blocked && !selectedUser.deletedAt"
+                variant="danger"
+                :disabled="activeAction === 'block'"
+                @click="handleBlock()"
+              >
+                {{ activeAction === 'block' ? 'Blocking...' : 'Block' }}
+              </AppButton>
+              <AppButton
+                v-if="selectedUser.blocked && !selectedUser.deletedAt"
+                variant="secondary"
+                :disabled="activeAction === 'unblock'"
+                @click="handleUnblock()"
+              >
+                {{ activeAction === 'unblock' ? 'Unblocking...' : 'Unblock' }}
+              </AppButton>
+              <AppButton
+                v-if="!selectedUser.deletedAt"
+                variant="ghost"
+                :disabled="activeAction === 'delete'"
+                @click="handleDelete()"
+              >
+                {{ activeAction === 'delete' ? 'Deleting...' : 'Soft delete' }}
+              </AppButton>
+            </div>
 
-          <span v-if="detailError" class="input-error">{{ detailError }}</span>
-          <span v-if="actionError" class="input-error">{{ actionError }}</span>
-          <span v-if="actionMessage" style="color: var(--color-success);">{{ actionMessage }}</span>
+            <span v-if="detailError" class="input-error">{{ detailError }}</span>
+            <span v-if="actionError" class="input-error">{{ actionError }}</span>
+            <span v-if="actionMessage" class="success-message">{{ actionMessage }}</span>
+          </section>
         </div>
-      </AppCard>
-
-      <AppCard title="Accounts">
-        <EmptyState
-          v-if="!selectedUser"
-          title="No user selected"
-          description="Select a user first."
-        />
-        <EmptyState
-          v-else-if="selectedAccounts.length === 0"
-          title="No accounts"
-          description="There are no accounts available for this user."
-        />
-        <div v-else class="stack-sm">
-          <div v-for="account in selectedAccounts" :key="account.id" class="helper-item" style="align-items: start;">
-            <div style="display: grid; gap: 0.35rem;">
-              <strong>{{ account.name }}</strong>
-              <span style="color: var(--color-text-muted); font-size: 0.92rem;">{{ account.iban }}</span>
-            </div>
-            <div style="display: grid; gap: 0.2rem; text-align: right;">
-              <strong>{{ formatCurrency(account.availableBalance, account.currency) }}</strong>
-              <span style="color: var(--color-text-muted); font-size: 0.92rem;">
-                Daily {{ formatCurrency(account.dailyLimit ?? 0, account.currency) }}
-              </span>
-              <span style="color: var(--color-text-muted); font-size: 0.92rem;">
-                Absolute {{ formatCurrency(account.absoluteLimit ?? 0, account.currency) }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </AppCard>
+      </section>
     </div>
   </div>
 </template>
+
+<style scoped>
+.directory-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.directory-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.directory-error {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.users-table-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.users-table-shell.is-refreshing {
+  opacity: 0.74;
+}
+
+.users-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.users-table {
+  min-width: 960px;
+}
+
+.users-table th,
+.users-table td {
+  white-space: nowrap;
+}
+
+.users-table .users-table-actions {
+  text-align: right;
+}
+
+.users-table td:last-child {
+  text-align: right;
+}
+
+.user-row {
+  cursor: pointer;
+}
+
+.user-row:focus {
+  outline: 3px solid rgba(142, 205, 183, 0.55);
+  outline-offset: -3px;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 16rem;
+}
+
+.user-cell span:last-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.user-cell small,
+.detail-heading span,
+.detail-list span,
+.account-item span,
+.table-footer span,
+.modal-eyebrow {
+  color: var(--color-text-muted);
+}
+
+.user-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.user-avatar--large {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  padding: 2rem;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 28, 24, 0.46);
+  backdrop-filter: blur(8px);
+}
+
+.user-modal {
+  width: min(100%, 68rem);
+  max-height: min(88vh, 56rem);
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
+.modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h3 {
+  margin: 0.15rem 0 0;
+  font-size: 1.35rem;
+}
+
+.modal-eyebrow {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modal-close {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(18, 62, 53, 0.08);
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.modal-content {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.85fr) minmax(0, 1.35fr);
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.modal-panel {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(18, 62, 53, 0.035);
+}
+
+.modal-panel h4 {
+  margin: 0;
+}
+
+.modal-panel--form {
+  background: #ffffff;
+}
+
+.detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.detail-heading div,
+.detail-list,
+.accounts-list,
+.account-item div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.badge-row,
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.detail-list {
+  gap: 0.6rem;
+}
+
+.detail-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.account-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+}
+
+.account-item div:last-child {
+  text-align: right;
+}
+
+.success-message {
+  color: var(--color-success);
+}
+
+@media (max-width: 1100px) {
+  .directory-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modal-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .directory-filters,
+  .modal-content {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    padding: 0.75rem;
+  }
+
+  .table-footer,
+  .account-item,
+  .detail-list div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-item div:last-child {
+    text-align: left;
+  }
+}
+</style>
