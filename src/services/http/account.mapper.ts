@@ -13,11 +13,7 @@ interface BackendAccountResponse {
 
 interface BackendAccountPortfolioResponse {
   accounts: BackendAccountResponse[]
-  totals: {
-    combinedBalance: number
-    checkingBalance: number
-    savingsBalance: number
-  }
+  totalBalance: number
 }
 
 function mapAccountType(accountType: BackendAccountResponse['accountType']): BankAccount['type'] {
@@ -51,9 +47,9 @@ function mapAccount(account: BackendAccountResponse): BankAccount {
 
 function mapSummary(response: BackendAccountPortfolioResponse): AccountSummary {
   return {
-    totalBalance: response.totals.combinedBalance,
-    liquidBalance: response.totals.combinedBalance,
-    accountsCount: response.accounts.length,
+    totalBalance: response.totalBalance, // Totaal saldo direct uit de backend response
+    liquidBalance: response.totalBalance, // Zelfde waarde — checking + savings gecombineerd
+    accountsCount: response.accounts.length, // Aantal accounts in de lijst
     mainCurrency: 'EUR',
   }
 }
