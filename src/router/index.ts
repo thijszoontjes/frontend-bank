@@ -6,7 +6,7 @@ import { authRoutes } from './modules/auth'
 import { systemRoutes } from './modules/system'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [...authRoutes, ...appRoutes, ...systemRoutes],
   scrollBehavior() {
     return {
