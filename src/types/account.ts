@@ -9,9 +9,9 @@ export interface BankAccount {
   type: AccountType
   currency: string
   availableBalance: number
-  ledgerBalance: number
   status: AccountStatus
-  updatedAt: string
+  createdAt: string
+  updatedAt?: string
   absoluteLimit?: number
   dailyLimit?: number
 }
