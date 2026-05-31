@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { services } from '@/services'
-import type { AtmTransactionResult } from '@/types/atm'
+import type { AtmTransactionResult, AtmDepositPayload, AtmWithdrawPayload } from '@/types/atm'
 import { toErrorMessage } from '@/utils/format'
 
 export const useAtmStore = defineStore('atm', () => {
@@ -10,13 +10,13 @@ export const useAtmStore = defineStore('atm', () => {
   const error = ref<string | null>(null)
   const lastResult = ref<AtmTransactionResult | null>(null)
 
-  async function deposit(iban: string, amount: number) {
+  async function deposit(payload: AtmDepositPayload) {
     isLoading.value = true
     error.value = null
     lastResult.value = null
 
     try {
-      const result = await services.atm.deposit({ iban, amount })
+      const result = await services.atm.deposit(payload)
       lastResult.value = result
       return result
     } catch (caughtError) {
@@ -27,13 +27,13 @@ export const useAtmStore = defineStore('atm', () => {
     }
   }
 
-  async function withdraw(iban: string, amount: number) {
+  async function withdraw(payload: AtmWithdrawPayload) {
     isLoading.value = true
     error.value = null
     lastResult.value = null
 
     try {
-      const result = await services.atm.withdraw({ iban, amount })
+      const result = await services.atm.withdraw(payload)
       lastResult.value = result
       return result
     } catch (caughtError) {

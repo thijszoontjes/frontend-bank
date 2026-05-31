@@ -6,10 +6,10 @@ import { simulateDelay } from './shared'
 
 export function createMockAtmService(): AtmService {
   return {
-    async deposit({ iban, amount }) {
+    async deposit({ toAccountIban, amount }) {
       await simulateDelay(300)
 
-      const account = mockDb.accounts.find((a) => a.iban === iban)
+      const account = mockDb.accounts.find((a) => a.iban === toAccountIban)
       if (!account) {
         throw new Error('Account not found.')
       }
@@ -19,7 +19,7 @@ export function createMockAtmService(): AtmService {
 
       const result: AtmTransactionResult = {
         transactionId: Date.now(),
-        iban,
+        iban: toAccountIban,
         amount,
         newBalance: account.availableBalance,
         type: 'DEPOSIT',
@@ -29,10 +29,10 @@ export function createMockAtmService(): AtmService {
       return result
     },
 
-    async withdraw({ iban, amount }) {
+    async withdraw({ fromAccountIban, amount }) {
       await simulateDelay(300)
 
-      const account = mockDb.accounts.find((a) => a.iban === iban)
+      const account = mockDb.accounts.find((a) => a.iban === fromAccountIban)
       if (!account) {
         throw new Error('Account not found.')
       }
@@ -47,7 +47,7 @@ export function createMockAtmService(): AtmService {
 
       const result: AtmTransactionResult = {
         transactionId: Date.now(),
-        iban,
+        iban: fromAccountIban,
         amount,
         newBalance: account.availableBalance,
         type: 'WITHDRAWAL',
