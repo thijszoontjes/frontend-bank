@@ -1,5 +1,19 @@
 export type AccountType = 'checking' | 'savings' | 'business'
 export type AccountStatus = 'active' | 'review' | 'blocked'
+export type AccountBalanceOperator = 'gt' | 'eq' | 'lt'
+
+export interface AccountListFilters {
+  type?: 'checking' | 'savings'
+  status?: AccountStatus
+  balanceOperator?: AccountBalanceOperator
+  balanceValue?: number
+  createdAfter?: string
+}
+
+export interface AccountListResult {
+  items: BankAccount[]
+  page: import('@/types/common').PageMetadata
+}
 
 export interface BankAccount {
   id: string

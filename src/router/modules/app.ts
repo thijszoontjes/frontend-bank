@@ -56,6 +56,16 @@ export const appRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'manage-accounts',
+        name: 'manage-accounts',
+        component: () => import('@/views/app/EmployeeAccountsView.vue'),
+        meta: {
+          title: 'Accounts',
+          requiresAuth: true,
+          roles: ['employee'],
+        },
+      },
+      {
         path: 'approvals',
         name: 'approvals',
         component: () => import('@/views/app/PendingApprovalsView.vue'),

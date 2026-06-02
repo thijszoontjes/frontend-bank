@@ -38,6 +38,12 @@ export const navigationItems: NavigationItem[] = [
     roles: ['employee'],
   },
   {
+    label: 'All accounts',
+    shortLabel: 'AA',
+    to: '/manage-accounts',
+    roles: ['employee'],
+  },
+  {
     label: 'Users',
     shortLabel: 'US',
     to: '/users',

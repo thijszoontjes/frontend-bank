@@ -2,12 +2,86 @@ import type { HttpClient } from '@/services/api/httpClient'
 import type { AccountService } from '@/services/contracts'
 import { mapAccountPortfolio } from '@/services/http/account.mapper'
 import type { BackendAccountPortfolioResponse } from '@/services/http/account.mapper'
+import type { AccountListFilters, AccountListResult, BankAccount } from '@/types/account'
+
+interface BackendAccountListResponse {
+  content: Array<{
+    iban: string
+    balance: number
+    accountType: 'CHECKING' | 'SAVINGS'
+    status: 'OPEN' | 'CLOSED'
+    absoluteLimit: number
+    dailyLimit: number
+    createdAt: string
+    userId: number
+  }>
+  totalElements: number
+  totalPages: number
+  number: number
+  size: number
+}
+
+function mapStatusToBackend(status: BankAccount['status']): 'OPEN' | 'CLOSED' | undefined {
+  if (status === 'active') return 'OPEN'
+  if (status === 'blocked') return 'CLOSED'
+  return undefined
+}
 
 export function createHttpAccountService(client: HttpClient): AccountService {
   return {
     async getAccountPortfolio(userId) {
       const response = await client.get<BackendAccountPortfolioResponse>(`/users/${userId}/accounts`)
       return mapAccountPortfolio(response)
+    },
+
+    async listAllAccounts(page = 0, size = 15, filters: AccountListFilters = {}): Promise<AccountListResult> {
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('size', String(size))
+
+      if (filters.type) {
+        params.set('accountType', filters.type.toUpperCase())
+      }
+
+      if (filters.status) {
+        const backendStatus = mapStatusToBackend(filters.status)
+        if (backendStatus) {
+          params.set('status', backendStatus)
+        }
+      }
+
+      if (filters.balanceOperator !== undefined && filters.balanceValue !== undefined) {
+        params.set('balanceOperator', filters.balanceOperator)
+        params.set('balanceValue', String(filters.balanceValue))
+      }
+
+      if (filters.createdAfter) {
+        params.set('createdAfter', filters.createdAfter)
+      }
+
+      const response = await client.get<BackendAccountListResponse>(`/accounts?${params.toString()}`)
+
+      return {
+        items: response.content.map((a) => ({
+          id: a.iban,
+          userId: String(a.userId),
+          name: a.accountType === 'CHECKING' ? 'Checking account' : 'Savings account',
+          iban: a.iban,
+          type: a.accountType === 'CHECKING' ? 'checking' : 'savings',
+          currency: 'EUR',
+          availableBalance: a.balance,
+          status: a.status === 'OPEN' ? 'active' : 'blocked',
+          createdAt: a.createdAt,
+          absoluteLimit: a.absoluteLimit,
+          dailyLimit: a.dailyLimit,
+        })),
+        page: {
+          page: response.number,
+          size: response.size,
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+        },
+      }
     },
   }
 }

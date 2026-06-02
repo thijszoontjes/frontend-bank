@@ -1,4 +1,5 @@
 import type { AccountService } from '@/services/contracts'
+import type { AccountListFilters, AccountListResult, BankAccount } from '@/types/account'
 
 import { mockDb } from './db'
 import { simulateDelay } from './shared'
@@ -16,6 +17,38 @@ function buildSummary(userId: string) {
   }
 }
 
+function applyAccountFilters(accounts: BankAccount[], filters: AccountListFilters): BankAccount[] {
+  let result = accounts
+
+  if (filters.type) {
+    result = result.filter((a) => a.type === filters.type)
+  }
+
+  if (filters.status) {
+    result = result.filter((a) => a.status === filters.status)
+  }
+
+  if (filters.balanceOperator !== undefined && filters.balanceValue !== undefined) {
+    const value = filters.balanceValue
+
+    if (filters.balanceOperator === 'gt') {
+      result = result.filter((a) => a.availableBalance > value)
+    } else if (filters.balanceOperator === 'lt') {
+      result = result.filter((a) => a.availableBalance < value)
+    } else if (filters.balanceOperator === 'eq') {
+      result = result.filter((a) => a.availableBalance === value)
+    }
+  }
+
+  if (filters.createdAfter) {
+    const from = new Date(filters.createdAfter).getTime()
+
+    result = result.filter((a) => new Date(a.createdAt).getTime() >= from)
+  }
+
+  return result
+}
+
 export function createMockAccountService(): AccountService {
   return {
     async getAccountPortfolio(userId: string) {
@@ -24,6 +57,33 @@ export function createMockAccountService(): AccountService {
       return {
         accounts: mockDb.accounts.filter((account) => account.userId === userId),
         summary: buildSummary(userId),
+      }
+    },
+
+    async listAllAccounts(page = 0, size = 15, filters: AccountListFilters = {}): Promise<AccountListResult> {
+      await simulateDelay(200)
+
+      const customerIds = new Set(
+        mockDb.users
+          .filter((u) => u.role === 'customer')
+          .map((u) => u.id),
+      )
+
+      const customerAccounts = mockDb.accounts.filter((a) => customerIds.has(a.userId))
+      const filtered = applyAccountFilters(customerAccounts, filters)
+      const totalElements = filtered.length
+      const totalPages = Math.max(1, Math.ceil(totalElements / size))
+      const safePage = Math.min(page, totalPages - 1)
+      const items = filtered.slice(safePage * size, safePage * size + size)
+
+      return {
+        items,
+        page: {
+          page: safePage,
+          size,
+          totalElements,
+          totalPages,
+        },
       }
     },
   }
