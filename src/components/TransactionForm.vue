@@ -3,8 +3,8 @@ import { computed, ref, watch } from 'vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import type { BankAccount } from '@/types/account'
-import { useCurrentUser } from '@/composables/useCurrentUser'
 import type { CreateTransactionPayload } from '@/types/transaction'
+import { useCurrentUser } from '@/composables/useCurrentUser'
 
 const props = defineProps({
   accounts: {
@@ -33,7 +33,6 @@ const fromAccountIban = ref(props.defaultFromIban || props.accounts[0]?.iban || 
 const toAccountIban = ref('')
 const amount = ref('')
 const description = ref('')
-const initiatorId = useCurrentUser().userId
 const error = ref('')
 
 watch(
@@ -45,6 +44,7 @@ watch(
   },
 )
 
+const { userId } = useCurrentUser()
 const sortedAccounts = computed(() => [...props.accounts])
 
 function validateForm() {
@@ -75,7 +75,7 @@ function submit() {
   emit('submit', {
     fromAccountIban: fromAccountIban.value,
     toAccountIban: toAccountIban.value.trim(),
-    initiatorId: initiatorId.value,
+    initiatorId: Number(userId.value) || 0,
     amount: Number(amount.value.trim()),
     description: description.value.trim() || undefined,
   })

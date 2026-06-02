@@ -61,12 +61,21 @@ async function submit() {
   atmStore.clearResult()
 
   try {
-    const result =
+    const rawResult =
       activeAction.value === 'deposit'
-        ? await atmStore.deposit(iban, amount)
-        : await atmStore.withdraw(iban, amount)
+        ? await atmStore.deposit({ toAccountIban: iban, amount })
+        : await atmStore.withdraw({ fromAccountIban: iban, amount })
 
-    successResult.value = result ?? null
+    const computedNewBalance =
+      activeAction.value === 'deposit'
+        ? checkingAccount.value.availableBalance + amount
+        : checkingAccount.value.availableBalance - amount
+
+    successResult.value = {
+      ...rawResult,
+      newBalance: rawResult.newBalance ?? computedNewBalance,
+    }
+
     amountInput.value = ''
 
     // Refresh account balance.

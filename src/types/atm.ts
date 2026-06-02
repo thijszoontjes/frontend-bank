@@ -10,11 +10,13 @@ export interface AtmTransactionResult {
 }
 
 export interface AtmDepositPayload {
-  iban: string
+  toAccountIban: string
   amount: number
+  description?: string
 }
 
 export interface AtmWithdrawPayload {
-  iban: string
+  fromAccountIban: string
   amount: number
+  description?: string
 }

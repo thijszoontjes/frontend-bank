@@ -15,7 +15,7 @@ const props = defineProps({
 const { formatCurrency } = useCurrency()
 
 const columns = [
-  { key: 'transactionType', label: 'Type' },
+  { key: 'type', label: 'Type' },
   { key: 'createdAt', label: 'Date' },
   { key: 'amount', label: 'Amount' },
   { key: 'fromAccount', label: 'From' },
@@ -24,7 +24,7 @@ const columns = [
   { key: 'description', label: 'Description' },
 ]
 
-function statusVariant(status: string) {
+function statusVariant(status: string | undefined) {
   return status === 'COMPLETED' ? 'success' : 'danger'
 }
 </script>
@@ -34,7 +34,7 @@ function statusVariant(status: string) {
     <!-- Cast to Record<string, any>[] for the generic table component -->
     <AppTable :columns="columns" :rows="(props.transactions as any[])">
       
-      <template #cell-transactionType="{ value }">
+      <template #cell-type="{ value }">
         {{ value }}
       </template>
 
@@ -43,27 +43,22 @@ function statusVariant(status: string) {
       </template>
 
       <template #cell-amount="{ row }">
-        <span :class="row.status === 'COMPLETED' ? 'amount-positive' : 'amount-negative'">
-          <!-- FIX: Added a fallback for currency to prevent RangeError -->
-          {{ row.currency 
-             ? formatCurrency(Number(row.amount), String(row.currency)) 
-             : row.amount 
-          }}
+        <span :class="row.status === 'COMPLETED' || !row.status ? 'amount-positive' : 'amount-negative'">
+          {{ formatCurrency(Number(row.amount)) }}
         </span>
       </template>
 
       <template #cell-fromAccount="{ row }">
-        <!-- FIX: Optional chaining to prevent "cannot read property iban of undefined" -->
         {{ row.fromAccount || '—' }}
       </template>
 
       <template #cell-toAccount="{ row }">
-        <!-- FIX: Optional chaining -->
         {{ row.toAccount || '—' }}
       </template>
 
-      <template #cell-status="{ value }">
-        <AppBadge :variant="statusVariant(String(value))">{{ value }}</AppBadge>
+      <template #cell-status="{ row }">
+        <AppBadge v-if="row.status" :variant="statusVariant(String(row.status))">{{ row.status }}</AppBadge>
+        <span v-else>—</span>
       </template>
 
       <template #cell-description="{ value }">
