@@ -36,6 +36,70 @@ function getUserById(userId: string | number | undefined) {
 
 export function createMockTransactionService(): TransactionService {
   return {
+    async listTransactions(page = 0, size = 25, sortBy = 'transactionId', sortDir = 'DESC', filters = {}) {
+      await simulateDelay()
+
+      let filtered = [...mockDb.transactions]
+
+      // Apply search filter
+      if (filters.search) {
+        const search = filters.search.toLowerCase()
+        filtered = filtered.filter((t) =>
+          t.transactionId.toString().includes(search) ||
+          t.fromAccount.toLowerCase().includes(search) ||
+          t.toAccount.toLowerCase().includes(search) ||
+          t.description?.toLowerCase().includes(search) ||
+          t.initiatedBy.firstName.toLowerCase().includes(search) ||
+          t.initiatedBy.lastName.toLowerCase().includes(search)
+        )
+      }
+
+      // Apply date filters
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate)
+        filtered = filtered.filter((t) => new Date(t.createdAt) >= startDate)
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate)
+        endDate.setHours(23, 59, 59, 999)
+        filtered = filtered.filter((t) => new Date(t.createdAt) <= endDate)
+      }
+
+      // Apply sorting
+      filtered.sort((a, b) => {
+        let aVal: any = a.transactionId
+        let bVal: any = b.transactionId
+
+        if (sortBy === 'amount') {
+          aVal = a.amount
+          bVal = b.amount
+        } else if (sortBy === 'createdAt') {
+          aVal = new Date(a.createdAt).getTime()
+          bVal = new Date(b.createdAt).getTime()
+        }
+
+        const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+        return sortDir === 'ASC' ? comparison : -comparison
+      })
+
+      // Apply pagination
+      const totalElements = filtered.length
+      const totalPages = Math.ceil(totalElements / size)
+      const start = page * size
+      const end = start + size
+      const items = filtered.slice(start, end)
+
+      return {
+        items,
+        page: {
+          page,
+          size,
+          totalElements,
+          totalPages,
+        },
+      }
+    },
     async getTransactionsByUser(userId: string) {
       await simulateDelay()
 

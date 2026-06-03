@@ -1,4 +1,6 @@
-export type TransactionType = 'TRANSACTION' | 'DEPOSIT' | 'WITHDRAWAL'
+import type { PageMetadata } from './common'
+
+export type TransactionType = 'TRANSACTION' | 'TRANSFER' | 'DEPOSIT' | 'WITHDRAWAL'
 export type TransactionStatus = 'COMPLETED' | 'REJECTED'
 
 export interface UserResponseDto {
@@ -18,6 +20,17 @@ export interface Transaction {
   fromAccount: string
   description?: string
   status?: TransactionStatus
+}
+
+export interface TransactionListFilters {
+  search?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface TransactionListResult {
+  items: Transaction[]
+  page: PageMetadata
 }
 
 export interface CreateTransactionPayload {
