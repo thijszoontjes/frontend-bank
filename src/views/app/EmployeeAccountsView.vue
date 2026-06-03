@@ -27,7 +27,8 @@ const filters = reactive<{
   type: AccountTypeFilter
   status: AccountStatusFilter
   balanceOperator: BalanceOperatorFilter
-  balanceValue: string
+  // Vue 3 coerces <input type="number"> to a number at runtime, so '' represents "empty".
+  balanceValue: number | ''
   createdAfter: string
 }>({
   type: 'all',
@@ -38,17 +39,15 @@ const filters = reactive<{
 })
 
 function buildFilters() {
+  // balanceValue is '' when the field is empty, or a number when the user has typed a value.
+  const hasBalance = filters.balanceOperator !== 'none' && filters.balanceValue !== ''
+
   return {
     type: filters.type === 'all' ? undefined : (filters.type as 'checking' | 'savings'),
     status: filters.status === 'all' ? undefined : (filters.status as AccountStatus),
-    balanceOperator:
-      filters.balanceOperator !== 'none' && filters.balanceValue.trim() !== ''
-        ? (filters.balanceOperator as AccountBalanceOperator)
-        : undefined,
-    balanceValue:
-      filters.balanceOperator !== 'none' && filters.balanceValue.trim() !== ''
-        ? Number(filters.balanceValue)
-        : undefined,
+    balanceOperator: hasBalance ? (filters.balanceOperator as AccountBalanceOperator) : undefined,
+    // balanceValue is already a number — no conversion needed.
+    balanceValue: hasBalance ? (filters.balanceValue as number) : undefined,
     createdAfter: filters.createdAfter || undefined,
   }
 }
@@ -107,7 +106,7 @@ watch(
 watch(
   () => filters.balanceValue,
   () => {
-    if (filters.balanceOperator !== 'none' && filters.balanceValue.trim() !== '') {
+    if (filters.balanceOperator !== 'none' && filters.balanceValue !== '') {
       void loadAccounts(0)
     }
   },
