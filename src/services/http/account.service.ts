@@ -2,29 +2,45 @@ import type { HttpClient } from '@/services/api/httpClient'
 import type { AccountService } from '@/services/contracts'
 import { mapAccountPortfolio } from '@/services/http/account.mapper'
 import type { BackendAccountPortfolioResponse } from '@/services/http/account.mapper'
+import type { PageMetadata } from '@/types/common'
 import type { AccountListFilters, AccountListResult, BankAccount } from '@/types/account'
 
-interface BackendAccountListResponse {
-  content: Array<{
-    iban: string
-    balance: number
-    accountType: 'CHECKING' | 'SAVINGS'
-    status: 'OPEN' | 'CLOSED'
-    absoluteLimit: number
-    dailyLimit: number
-    createdAt: string
-    userId: number
-  }>
-  totalElements: number
-  totalPages: number
-  number: number
-  size: number
+interface BackendAccountResponse {
+  iban: string
+  balance: number
+  accountType: 'CHECKING' | 'SAVINGS'
+  status: 'OPEN' | 'CLOSED'
+  absoluteLimit: number
+  dailyLimit: number
+  createdAt: string
+  userId: number
+}
+
+interface PagedAccountsResponse {
+  items: BackendAccountResponse[]
+  page: PageMetadata
 }
 
 function mapStatusToBackend(status: BankAccount['status']): 'OPEN' | 'CLOSED' | undefined {
   if (status === 'active') return 'OPEN'
   if (status === 'blocked') return 'CLOSED'
   return undefined
+}
+
+function mapAccount(a: BackendAccountResponse): BankAccount {
+  return {
+    id: a.iban,
+    userId: String(a.userId),
+    name: a.accountType === 'CHECKING' ? 'Checking account' : 'Savings account',
+    iban: a.iban,
+    type: a.accountType === 'CHECKING' ? 'checking' : 'savings',
+    currency: 'EUR',
+    availableBalance: a.balance,
+    status: a.status === 'OPEN' ? 'active' : 'blocked',
+    createdAt: a.createdAt,
+    absoluteLimit: a.absoluteLimit,
+    dailyLimit: a.dailyLimit,
+  }
 }
 
 export function createHttpAccountService(client: HttpClient): AccountService {
@@ -34,10 +50,11 @@ export function createHttpAccountService(client: HttpClient): AccountService {
       return mapAccountPortfolio(response)
     },
 
-    async listAllAccounts(page = 0, size = 15, filters: AccountListFilters = {}): Promise<AccountListResult> {
-      const params = new URLSearchParams()
-      params.set('page', String(page))
-      params.set('size', String(size))
+    async listAllAccounts(page = 0, size = 25, filters: AccountListFilters = {}): Promise<AccountListResult> {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+      })
 
       if (filters.type) {
         params.set('accountType', filters.type.toUpperCase())
@@ -59,28 +76,11 @@ export function createHttpAccountService(client: HttpClient): AccountService {
         params.set('createdAfter', filters.createdAfter)
       }
 
-      const response = await client.get<BackendAccountListResponse>(`/accounts?${params.toString()}`)
+      const response = await client.get<PagedAccountsResponse>(`/accounts?${params.toString()}`)
 
       return {
-        items: response.content.map((a) => ({
-          id: a.iban,
-          userId: String(a.userId),
-          name: a.accountType === 'CHECKING' ? 'Checking account' : 'Savings account',
-          iban: a.iban,
-          type: a.accountType === 'CHECKING' ? 'checking' : 'savings',
-          currency: 'EUR',
-          availableBalance: a.balance,
-          status: a.status === 'OPEN' ? 'active' : 'blocked',
-          createdAt: a.createdAt,
-          absoluteLimit: a.absoluteLimit,
-          dailyLimit: a.dailyLimit,
-        })),
-        page: {
-          page: response.number,
-          size: response.size,
-          totalElements: response.totalElements,
-          totalPages: response.totalPages,
-        },
+        items: (response.items ?? []).map(mapAccount),
+        page: response.page,
       }
     },
   }

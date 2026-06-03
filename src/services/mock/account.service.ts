@@ -60,7 +60,7 @@ export function createMockAccountService(): AccountService {
       }
     },
 
-    async listAllAccounts(page = 0, size = 15, filters: AccountListFilters = {}): Promise<AccountListResult> {
+    async listAllAccounts(page = 0, size = 25, filters: AccountListFilters = {}): Promise<AccountListResult> {
       await simulateDelay(200)
 
       const customerIds = new Set(
