@@ -20,12 +20,6 @@ export const navigationItems: NavigationItem[] = [
     roles: ['customer'],
   },
   {
-    label: 'Transactions',
-    shortLabel: 'TX',
-    to: '/transactions',
-    roles: ['customer'],
-  },
-  {
     label: 'ATM',
     shortLabel: 'AT',
     to: '/atm',
@@ -41,6 +35,12 @@ export const navigationItems: NavigationItem[] = [
     label: 'Users',
     shortLabel: 'US',
     to: '/users',
+    roles: ['employee'],
+  },
+  {
+    label: 'Transactions overview',
+    shortLabel: 'TX',
+    to: '/transactions/overview',
     roles: ['employee'],
   },
   {

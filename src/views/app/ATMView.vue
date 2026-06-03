@@ -12,17 +12,40 @@ import { useCurrency } from '@/composables/useCurrency'
 import { useCurrentUser } from '@/composables/useCurrentUser'
 import { useAccountStore } from '@/stores/account'
 import { useAtmStore } from '@/stores/atm'
+import { services } from '@/services'
 import type { AtmTransactionResult } from '@/types/atm'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime, toErrorMessage } from '@/utils/format'
 
 const { formatCurrency } = useCurrency()
-const { userId } = useCurrentUser()
+const { userId, user } = useCurrentUser()
 const accountStore = useAccountStore()
 const atmStore = useAtmStore()
 
 const amountInput = ref('')
 const activeAction = ref<'deposit' | 'withdraw'>('deposit')
 const successResult = ref<AtmTransactionResult | null>(null)
+const atmPassword = ref('')
+const atmAuthorized = ref(false)
+const atmLoginError = ref('')
+const isAtmLoggingIn = ref(false)
+
+const atmEmail = computed(() => user.value?.email ?? '')
+const atmCanLogin = computed(() => !!atmEmail.value && !!atmPassword.value && !isAtmLoggingIn.value)
+
+async function loginAtm() {
+  atmLoginError.value = ''
+  isAtmLoggingIn.value = true
+
+  try {
+    await services.auth.login({ email: atmEmail.value, password: atmPassword.value })
+    atmAuthorized.value = true
+    atmPassword.value = ''
+  } catch (caughtError) {
+    atmLoginError.value = toErrorMessage(caughtError)
+  } finally {
+    isAtmLoggingIn.value = false
+  }
+}
 
 const checkingAccount = computed(() =>
   accountStore.accounts.find((a) => a.type === 'checking'),
@@ -152,76 +175,113 @@ onMounted(() => void loadAccounts())
           </div>
         </AppCard>
 
-        <AppCard>
+        <AppCard title="ATM login">
           <div class="stack-sm">
-            <div class="pill-filter" role="tablist" aria-label="ATM action">
-              <button
-                :class="{ 'is-active': activeAction === 'deposit' }"
-                @click="selectAction('deposit')"
-              >
-                Deposit
-              </button>
-              <button
-                :class="{ 'is-active': activeAction === 'withdraw' }"
-                @click="selectAction('withdraw')"
-              >
-                Withdraw
-              </button>
+            <p style="margin: 0; color: var(--color-text-muted);">
+              Please authenticate specifically for the ATM before you can make deposits or withdrawals.
+            </p>
+            <div>
+              <span style="display: block; font-size: 0.8rem; color: var(--color-text-muted);">Email</span>
+              <strong>{{ atmEmail }}</strong>
             </div>
 
             <AppInput
-              v-model="amountInput"
-              label="Amount (EUR)"
-              type="number"
-              placeholder="0.00"
-              :error="amountError"
+              v-model="atmPassword"
+              label="ATM password"
+              type="password"
+              placeholder="Enter ATM password"
+              :error="atmLoginError"
               autocomplete="off"
             />
 
-            <div v-if="atmStore.error" class="input-error" style="padding: 0.5rem 0;">
-              {{ atmStore.error }}
-            </div>
-
             <AppButton
-              :disabled="!canSubmit"
-              :variant="activeAction === 'withdraw' ? 'danger' : 'primary'"
+              :disabled="!atmCanLogin"
+              variant="primary"
               block
-              @click="submit"
+              @click="loginAtm"
             >
-              <span v-if="atmStore.isLoading">Processing...</span>
-              <span v-else-if="activeAction === 'deposit'">Deposit</span>
-              <span v-else>Withdraw</span>
+              <span v-if="isAtmLoggingIn">Authenticating...</span>
+              <span v-else>Login to ATM</span>
             </AppButton>
+
+            <span v-if="atmAuthorized" class="success-message">ATM access granted.</span>
           </div>
         </AppCard>
       </div>
 
-      <AppCard v-if="successResult" title="Transaction confirmed">
-        <div class="stack-sm">
-          <div class="row-between">
-            <span>Type</span>
-            <AppBadge :variant="successResult.type === 'DEPOSIT' ? 'success' : 'warning'">
-              {{ successResult.type === 'DEPOSIT' ? 'Deposit' : 'Withdrawal' }}
-            </AppBadge>
-          </div>
-          <div class="row-between">
-            <span>Amount</span>
-            <strong>{{ formatCurrency(successResult.amount) }}</strong>
-          </div>
-          <div class="row-between">
-            <span>New balance</span>
-            <strong>{{ formatCurrency(successResult.newBalance) }}</strong>
-          </div>
-          <div class="row-between">
-            <span>IBAN</span>
-            <strong>{{ successResult.iban }}</strong>
-          </div>
-          <div class="row-between">
-            <span>Date</span>
-            <strong>{{ formatDateTime(successResult.createdAt) }}</strong>
-          </div>
+      <template v-if="atmAuthorized">
+        <div class="grid-two" style="align-items: start;">
+          <AppCard>
+            <div class="stack-sm">
+              <div class="pill-filter" role="tablist" aria-label="ATM action">
+                <button
+                  :class="{ 'is-active': activeAction === 'deposit' }"
+                  @click="selectAction('deposit')"
+                >
+                  Deposit
+                </button>
+                <button
+                  :class="{ 'is-active': activeAction === 'withdraw' }"
+                  @click="selectAction('withdraw')"
+                >
+                  Withdraw
+                </button>
+              </div>
+
+              <AppInput
+                v-model="amountInput"
+                label="Amount (EUR)"
+                type="number"
+                placeholder="0.00"
+                :error="amountError"
+                autocomplete="off"
+              />
+
+              <div v-if="atmStore.error" class="input-error" style="padding: 0.5rem 0;">
+                {{ atmStore.error }}
+              </div>
+
+              <AppButton
+                :disabled="!canSubmit"
+                :variant="activeAction === 'withdraw' ? 'danger' : 'primary'"
+                block
+                @click="submit"
+              >
+                <span v-if="atmStore.isLoading">Processing...</span>
+                <span v-else-if="activeAction === 'deposit'">Deposit</span>
+                <span v-else>Withdraw</span>
+              </AppButton>
+            </div>
+          </AppCard>
         </div>
-      </AppCard>
+
+        <AppCard v-if="successResult" title="Transaction confirmed">
+          <div class="stack-sm">
+            <div class="row-between">
+              <span>Type</span>
+              <AppBadge :variant="successResult.type === 'DEPOSIT' ? 'success' : 'warning'">
+                {{ successResult.type === 'DEPOSIT' ? 'Deposit' : 'Withdrawal' }}
+              </AppBadge>
+            </div>
+            <div class="row-between">
+              <span>Amount</span>
+              <strong>{{ formatCurrency(successResult.amount) }}</strong>
+            </div>
+            <div class="row-between">
+              <span>New balance</span>
+              <strong>{{ formatCurrency(successResult.newBalance) }}</strong>
+            </div>
+            <div class="row-between">
+              <span>IBAN</span>
+              <strong>{{ successResult.iban }}</strong>
+            </div>
+            <div class="row-between">
+              <span>Date</span>
+              <strong>{{ formatDateTime(successResult.createdAt) }}</strong>
+            </div>
+          </div>
+        </AppCard>
+      </template>
     </template>
   </div>
 </template>

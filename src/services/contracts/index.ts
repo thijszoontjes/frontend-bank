@@ -2,7 +2,7 @@ import type { ApprovalListResult, ApprovalPayload } from '@/types/approval'
 import type { AccountPortfolio } from '@/types/account'
 import type { AtmDepositPayload, AtmTransactionResult, AtmWithdrawPayload } from '@/types/atm'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
-import type { CreateTransactionPayload, Transaction } from '@/types/transaction'
+import type { CreateTransactionPayload, Transaction, TransactionListFilters, TransactionListResult } from '@/types/transaction'
 import type {
   EmployeeCreateCustomerPayload,
   UserListFilters,
@@ -28,6 +28,7 @@ export interface AtmService {
 }
 
 export interface TransactionService {
+  listTransactions(page?: number, size?: number, sortBy?: string, sortDir?: string, filters?: TransactionListFilters): Promise<TransactionListResult>
   getTransactionsByUser(userId: string): Promise<Transaction[]>
   getTransactionsByAccount(iban: string): Promise<Transaction[]>
   createTransaction(payload: CreateTransactionPayload): Promise<Transaction>
