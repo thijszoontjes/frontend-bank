@@ -84,11 +84,11 @@ export function createHttpUserManagementService(client: HttpClient): UserManagem
       await client.delete(`/users/${userId}`)
     },
     async blockUser(userId) {
-      const response = await client.post<BackendUserResponse>(`/users/${userId}/block`)
+      const response = await client.put<BackendUserResponse>(`/users/${userId}/block`)
       return mapUser(response)
     },
     async unblockUser(userId) {
-      const response = await client.post<BackendUserResponse>(`/users/${userId}/unblock`)
+      const response = await client.put<BackendUserResponse>(`/users/${userId}/unblock`)
       return mapUser(response)
     },
   }

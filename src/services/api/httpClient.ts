@@ -5,6 +5,7 @@ import { readStorage } from '@/utils/storage'
 export interface HttpClient {
   get<T>(path: string, init?: RequestInit): Promise<T>
   post<T>(path: string, body?: unknown, init?: RequestInit): Promise<T>
+  put<T>(path: string, body?: unknown, init?: RequestInit): Promise<T>
   patch<T>(path: string, body?: unknown, init?: RequestInit): Promise<T>
   delete<T>(path: string, init?: RequestInit): Promise<T>
 }
@@ -63,6 +64,12 @@ export function createHttpClient(baseUrl: string): HttpClient {
       request(path, {
         ...init,
         method: 'POST',
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    put: (path, body, init) =>
+      request(path, {
+        ...init,
+        method: 'PUT',
         body: body ? JSON.stringify(body) : undefined,
       }),
     patch: (path, body, init) =>

@@ -35,10 +35,10 @@ export function createHttpApprovalService(client: HttpClient): ApprovalService {
       }
     },
     async approveApproval(userId, payload) {
-      await client.post(`/users/${userId}/approval`, payload)
+      await client.put(`/users/${userId}/approval`, payload)
     },
     async rejectApproval(userId, reason) {
-      await client.post(`/users/${userId}/reject`, reason ? { reason } : undefined)
+      await client.put(`/users/${userId}/reject`, reason ? { reason } : undefined)
     },
   }
 }
