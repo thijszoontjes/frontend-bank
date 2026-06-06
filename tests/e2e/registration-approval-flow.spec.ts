@@ -203,6 +203,25 @@ test.describe('registration and approval flow', () => {
     await expect(page).toHaveURL(/\/dashboard/)
     await expect(page.getByText('Customer workspace')).toBeVisible()
   })
+
+  test('shows a success message after an employee creates a customer', async ({ page }) => {
+    const customer = uniqueCustomer('EmployeeCreated')
+
+    await loginEmployee(page)
+    await page.goto('/users/new')
+    await page.getByLabel('First name').fill(customer.firstName)
+    await page.getByLabel('Last name').fill(customer.lastName)
+    await page.getByLabel('Email').fill(customer.email)
+    await page.getByLabel('Phone number').fill(customer.phoneNumber)
+    await page.getByLabel('BSN').fill(customer.bsn)
+    await page.getByLabel('Password').fill(customer.password)
+    await page.getByRole('button', { name: 'Create customer' }).click()
+
+    await expect(page).toHaveURL(/\/users\?created=1/)
+    await expect(page.getByRole('status')).toHaveText(
+      `${customer.firstName} ${customer.lastName} has been created.`,
+    )
+  })
 })
 
 test.describe('auth validation edge cases', () => {

@@ -15,7 +15,6 @@ export function createMockAtmService(): AtmService {
       }
 
       account.availableBalance += amount
-      account.ledgerBalance += amount
 
       const result: AtmTransactionResult = {
         transactionId: Date.now(),
@@ -43,7 +42,6 @@ export function createMockAtmService(): AtmService {
       }
 
       account.availableBalance -= amount
-      account.ledgerBalance -= amount
 
       const result: AtmTransactionResult = {
         transactionId: Date.now(),

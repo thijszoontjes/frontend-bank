@@ -109,7 +109,13 @@ async function handleSubmit() {
   try {
     const user = await services.user.createCustomer(payload)
     success.value = `${user.firstName} ${user.lastName} has been created.`
-    await router.push({ name: 'users' })
+    await router.push({
+      name: 'users',
+      query: {
+        created: '1',
+        customerName: `${user.firstName} ${user.lastName}`,
+      },
+    })
   } catch (caughtError) {
     error.value = toErrorMessage(caughtError)
   } finally {

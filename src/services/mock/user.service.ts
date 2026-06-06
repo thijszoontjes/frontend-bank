@@ -56,6 +56,8 @@ function createAccountRecord(
   absoluteLimit: number,
   dailyLimit: number,
 ) {
+  const timestamp = new Date().toISOString()
+
   return {
     id: `acc-${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     userId,
@@ -64,9 +66,9 @@ function createAccountRecord(
     type,
     currency: 'EUR',
     availableBalance: 0,
-    ledgerBalance: 0,
     status: 'active' as const,
-    updatedAt: new Date().toISOString(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
     absoluteLimit,
     dailyLimit,
   }
