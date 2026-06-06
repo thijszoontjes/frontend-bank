@@ -1,1 +1,0 @@
-import{d as r,o as a,e as o,a as e,t as n,J as i,n as l}from"./index-BKMYcs4d.js";const c={class:"page-header"},d={key:0},u=r({__name:"PageHeader",props:{title:{},description:{}},setup(t){return(s,p)=>(a(),o("header",c,[e("div",null,[e("h2",null,n(t.title),1),e("p",null,n(t.description),1)]),s.$slots.actions?(a(),o("div",d,[i(s.$slots,"actions")])):l("",!0)]))}});export{u as _};
