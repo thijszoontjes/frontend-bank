@@ -76,6 +76,10 @@ export function createHttpUserManagementService(client: HttpClient): UserManagem
       const response = await client.post<ApprovalResponse>('/users', payload)
       return mapUser(response.user)
     },
+    async createEmployee(payload) {
+      const response = await client.post<BackendUserResponse>('/users/employees', payload)
+      return mapUser(response)
+    },
     async updateUser(userId, payload) {
       const response = await client.patch<BackendUserResponse>(`/users/${userId}`, payload)
       return mapUser(response)

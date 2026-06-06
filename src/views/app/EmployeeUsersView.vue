@@ -41,8 +41,15 @@ const createSuccessMessage = computed(() => {
     return ''
   }
 
-  const customerName = typeof route.query.customerName === 'string' ? route.query.customerName : 'Customer'
-  return `${customerName} has been created.`
+  const userName = typeof route.query.userName === 'string'
+    ? route.query.userName
+    : typeof route.query.customerName === 'string'
+      ? route.query.customerName
+      : 'User'
+
+  return route.query.createdRole === 'employee'
+    ? `${userName} has been created as an employee.`
+    : `${userName} has been created.`
 })
 
 const filters = reactive<{
@@ -52,7 +59,7 @@ const filters = reactive<{
   employeeCreated: FilterValue
   includeDeleted: 'yes' | 'no'
 }>({
-  role: 'customer',
+  role: route.query.role === 'employee' ? 'employee' : 'customer',
   approvalStatus: 'all',
   blocked: 'all',
   employeeCreated: 'all',

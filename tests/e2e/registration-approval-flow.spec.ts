@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+const apiBaseUrl = process.env.E2E_API_BASE_URL ?? 'http://localhost:8080/api/v1'
+
 const employee = {
   email: 'employee@bank.local',
   password: 'Employee123!',
@@ -26,6 +28,19 @@ function uniqueCustomer(prefix: string) {
     phoneNumber: `+316${timestamp.slice(-8)}`,
     bsn: suffix.padStart(9, '0'),
     password: 'UiFlow123!',
+  }
+}
+
+function uniqueEmployee(prefix: string) {
+  const timestamp = Date.now().toString()
+
+  return {
+    firstName: 'Ellis',
+    lastName: `${prefix} Employee`,
+    email: `employee+${prefix.toLowerCase()}-${timestamp}@example.com`,
+    phoneNumber: `+316${timestamp.slice(-8)}`,
+    bsn: timestamp.slice(-9).padStart(9, '0'),
+    password: 'Welcome123!',
   }
 }
 
@@ -221,6 +236,85 @@ test.describe('registration and approval flow', () => {
     await expect(page.getByRole('status')).toHaveText(
       `${customer.firstName} ${customer.lastName} has been created.`,
     )
+  })
+
+  test('employee creates an employee who appears in the overview and can log in', async ({ page }) => {
+    const createdEmployee = uniqueEmployee('Created')
+    let createEmployeeRequests = 0
+
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/v1/users/employees')) {
+        createEmployeeRequests += 1
+      }
+    })
+
+    await loginEmployee(page)
+    await page.goto('/users/new')
+    await page.getByRole('button', { name: 'Create employee' }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'Create employee' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toHaveAttribute('aria-modal', 'true')
+    await expect(dialog.getByLabel(/Checking|Savings/)).toHaveCount(0)
+
+    await dialog.getByRole('button', { name: 'Create employee' }).click()
+    await expect(dialog.getByRole('alert')).toHaveText('Fill in all fields.')
+
+    await dialog.getByLabel('First name').fill(createdEmployee.firstName)
+    await dialog.getByLabel('Last name').fill(createdEmployee.lastName)
+    await dialog.getByLabel('Email').fill(createdEmployee.email)
+    await dialog.getByLabel('Phone number').fill(createdEmployee.phoneNumber)
+    await dialog.getByLabel('BSN').fill('123')
+    await dialog.getByLabel('Password').fill(createdEmployee.password)
+    await dialog.getByRole('button', { name: 'Create employee' }).click()
+    await expect(dialog.getByRole('alert')).toHaveText('BSN must contain exactly 9 digits.')
+
+    await dialog.getByLabel('BSN').fill(createdEmployee.bsn)
+    await dialog.getByLabel('Password').fill('short')
+    await dialog.getByRole('button', { name: 'Create employee' }).click()
+    await expect(dialog.getByRole('alert')).toHaveText('Password must contain at least 8 characters.')
+
+    await dialog.getByLabel('Password').fill(createdEmployee.password)
+    await dialog.getByRole('button', { name: 'Create employee' }).evaluate((button: HTMLButtonElement) => {
+      button.click()
+      button.click()
+    })
+
+    await expect(page).toHaveURL(/\/users\?.*created=1/)
+    expect(createEmployeeRequests).toBe(1)
+    await expect(page.getByRole('status')).toHaveText(
+      `${createdEmployee.firstName} ${createdEmployee.lastName} has been created as an employee.`,
+    )
+    await expect(page.getByLabel('Role')).toHaveValue('employee')
+    await expect(page.locator('tr', { hasText: createdEmployee.email })).toBeVisible()
+
+    await logout(page)
+    await login(page, createdEmployee.email, createdEmployee.password)
+    await expect(page).toHaveURL(/\/dashboard/)
+    await expect(page.getByText('Employee workspace')).toBeVisible()
+  })
+
+  test('customer cannot see employee creation or successfully call its endpoint', async ({ page, request }) => {
+    const attemptedEmployee = uniqueEmployee('Forbidden')
+
+    await login(page, existingApproved.email, existingApproved.password)
+    await expect(page).toHaveURL(/\/dashboard/)
+    await page.goto('/users/new')
+    await expect(page).toHaveURL(/\/dashboard/)
+    await expect(page.getByRole('button', { name: 'Create employee' })).toHaveCount(0)
+
+    const token = await page.evaluate(() => {
+      const session = JSON.parse(localStorage.getItem('frontend-bank.session') ?? 'null') as { token?: string } | null
+      return session?.token ?? ''
+    })
+    const response = await request.post(`${apiBaseUrl}/users/employees`, {
+      data: attemptedEmployee,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    expect(response.status()).toBe(403)
   })
 })
 
