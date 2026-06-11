@@ -28,6 +28,13 @@ export interface BankAccount {
   updatedAt?: string
   absoluteLimit?: number
   dailyLimit?: number
+  ownerEmail?: string
+  ownerName?: string
+}
+
+export interface AccountLimitsPayload {
+  absoluteLimit: number
+  dailyLimit: number
 }
 
 export interface AccountSummary {

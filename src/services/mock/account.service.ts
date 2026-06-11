@@ -1,5 +1,5 @@
 import type { AccountService } from '@/services/contracts'
-import type { AccountListFilters, AccountListResult, BankAccount } from '@/types/account'
+import type { AccountListFilters, AccountListResult, AccountLimitsPayload, BankAccount } from '@/types/account'
 
 import { mockDb } from './db'
 import { simulateDelay } from './shared'
@@ -85,6 +85,23 @@ export function createMockAccountService(): AccountService {
           totalPages,
         },
       }
+    },
+
+    async updateAccountLimits(iban: string, payload: AccountLimitsPayload): Promise<BankAccount> {
+      await simulateDelay(150)
+      const account = mockDb.accounts.find((a) => a.iban === iban)
+      if (!account) throw new Error('Account not found')
+      account.absoluteLimit = payload.absoluteLimit
+      account.dailyLimit = payload.dailyLimit
+      return { ...account }
+    },
+
+    async toggleAccountStatus(iban: string): Promise<BankAccount> {
+      await simulateDelay(150)
+      const account = mockDb.accounts.find((a) => a.iban === iban)
+      if (!account) throw new Error('Account not found')
+      account.status = account.status === 'active' ? 'blocked' : 'active'
+      return { ...account }
     },
   }
 }

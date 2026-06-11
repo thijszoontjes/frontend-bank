@@ -3,7 +3,7 @@ import type { AccountService } from '@/services/contracts'
 import { mapAccountPortfolio } from '@/services/http/account.mapper'
 import type { BackendAccountPortfolioResponse } from '@/services/http/account.mapper'
 import type { PageMetadata } from '@/types/common'
-import type { AccountListFilters, AccountListResult, BankAccount } from '@/types/account'
+import type { AccountListFilters, AccountListResult, AccountLimitsPayload, BankAccount } from '@/types/account'
 
 interface BackendAccountResponse {
   iban: string
@@ -14,6 +14,8 @@ interface BackendAccountResponse {
   dailyLimit: number
   createdAt: string
   userId: number
+  ownerEmail?: string
+  ownerName?: string
 }
 
 interface PagedAccountsResponse {
@@ -40,6 +42,8 @@ function mapAccount(a: BackendAccountResponse): BankAccount {
     createdAt: a.createdAt,
     absoluteLimit: a.absoluteLimit,
     dailyLimit: a.dailyLimit,
+    ownerEmail: a.ownerEmail,
+    ownerName: a.ownerName,
   }
 }
 
@@ -82,6 +86,16 @@ export function createHttpAccountService(client: HttpClient): AccountService {
         items: (response.items ?? []).map(mapAccount),
         page: response.page,
       }
+    },
+
+    async updateAccountLimits(iban: string, payload: AccountLimitsPayload): Promise<BankAccount> {
+      const response = await client.put<BackendAccountResponse>(`/accounts/${iban}/limits`, payload)
+      return mapAccount(response)
+    },
+
+    async toggleAccountStatus(iban: string): Promise<BankAccount> {
+      const response = await client.put<BackendAccountResponse>(`/accounts/${iban}/status`, {})
+      return mapAccount(response)
     },
   }
 }

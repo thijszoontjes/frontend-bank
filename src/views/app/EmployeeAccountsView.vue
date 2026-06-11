@@ -23,11 +23,17 @@ const pagination = ref<PageMetadata | null>(null)
 const listLoading = ref(false)
 const listError = ref('')
 
+// Detail modal state
+const selectedAccount = ref<BankAccount | null>(null)
+const isDetailModalOpen = ref(false)
+const actionLoading = ref(false)
+const detailError = ref('')
+const limitForm = reactive({ absoluteLimit: 0, dailyLimit: 0 })
+
 const filters = reactive<{
   type: AccountTypeFilter
   status: AccountStatusFilter
   balanceOperator: BalanceOperatorFilter
-  // Vue 3 coerces <input type="number"> to a number at runtime, so '' represents "empty".
   balanceValue: number | ''
   createdAfter: string
 }>({
@@ -39,14 +45,12 @@ const filters = reactive<{
 })
 
 function buildFilters() {
-  // balanceValue is '' when the field is empty, or a number when the user has typed a value.
   const hasBalance = filters.balanceOperator !== 'none' && filters.balanceValue !== ''
 
   return {
     type: filters.type === 'all' ? undefined : (filters.type as 'checking' | 'savings'),
     status: filters.status === 'all' ? undefined : (filters.status as AccountStatus),
     balanceOperator: hasBalance ? (filters.balanceOperator as AccountBalanceOperator) : undefined,
-    // balanceValue is already a number — no conversion needed.
     balanceValue: hasBalance ? (filters.balanceValue as number) : undefined,
     createdAfter: filters.createdAfter || undefined,
   }
@@ -82,7 +86,7 @@ function typeLabel(type: BankAccount['type']) {
 }
 
 async function loadAccounts(page = 0) {
-  listLoading.value = true //Visual feedback for loading state
+  listLoading.value = true
   listError.value = ''
 
   try {
@@ -93,6 +97,71 @@ async function loadAccounts(page = 0) {
     listError.value = toErrorMessage(caughtError)
   } finally {
     listLoading.value = false
+  }
+}
+
+function openDetail(account: BankAccount) {
+  selectedAccount.value = account
+  limitForm.absoluteLimit = account.absoluteLimit ?? 0
+  limitForm.dailyLimit = account.dailyLimit ?? 0
+  detailError.value = ''
+  isDetailModalOpen.value = true
+}
+
+function closeDetail() {
+  isDetailModalOpen.value = false
+  selectedAccount.value = null
+  detailError.value = ''
+  actionLoading.value = false
+}
+
+function updateAccountInList(updated: BankAccount) {
+  const idx = accounts.value.findIndex((a) => a.iban === updated.iban)
+  if (idx !== -1) accounts.value[idx] = updated
+  selectedAccount.value = updated
+}
+
+async function saveLimits() {
+  if (!selectedAccount.value) return
+
+  if (limitForm.dailyLimit <= 0) {
+    detailError.value = 'Daily limit must be greater than 0'
+    return
+  }
+
+  if (selectedAccount.value.type === 'checking' && limitForm.absoluteLimit > 0) {
+    detailError.value = 'Absolute limit for a checking account must be 0 or negative'
+    return
+  }
+
+  detailError.value = ''
+  actionLoading.value = true
+
+  try {
+    const updated = await services.account.updateAccountLimits(selectedAccount.value.iban, {
+      absoluteLimit: limitForm.absoluteLimit,
+      dailyLimit: limitForm.dailyLimit,
+    })
+    updateAccountInList(updated)
+  } catch (caughtError) {
+    detailError.value = toErrorMessage(caughtError)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function toggleStatus() {
+  if (!selectedAccount.value) return
+  detailError.value = ''
+  actionLoading.value = true
+
+  try {
+    const updated = await services.account.toggleAccountStatus(selectedAccount.value.iban)
+    updateAccountInList(updated)
+  } catch (caughtError) {
+    detailError.value = toErrorMessage(caughtError)
+  } finally {
+    actionLoading.value = false
   }
 }
 
@@ -204,13 +273,18 @@ onMounted(() => void loadAccounts())
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="account in accounts" :key="account.id">
+                  <tr
+                    v-for="account in accounts"
+                    :key="account.id"
+                    class="account-row"
+                    @click="openDetail(account)"
+                  >
                     <td>
                       <div class="account-cell">
                         <span class="account-icon">{{ account.type === 'checking' ? 'CH' : 'SV' }}</span>
                         <span>
-                          <strong>{{ account.name }}</strong>
-                          <small>{{ account.userId }}</small>
+                          <strong>{{ account.ownerName ?? account.name }}</strong>
+                          <small>{{ account.ownerEmail ?? account.userId }}</small>
                         </span>
                       </div>
                     </td>
@@ -258,6 +332,101 @@ onMounted(() => void loadAccounts())
       </div>
     </AppCard>
   </div>
+
+  <!-- Account detail modal -->
+  <Teleport to="body">
+    <div v-if="isDetailModalOpen && selectedAccount" class="modal-backdrop" @click.self="closeDetail">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title">Account details</h2>
+          <button class="modal-close" @click="closeDetail">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Owner</span>
+              <span class="detail-value">{{ selectedAccount.ownerName ?? '–' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">{{ selectedAccount.ownerEmail ?? '–' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">IBAN</span>
+              <span class="detail-value mono">{{ selectedAccount.iban }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Type</span>
+              <span class="detail-value">{{ typeLabel(selectedAccount.type) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Balance</span>
+              <span class="detail-value">{{ formatCurrency(selectedAccount.availableBalance, selectedAccount.currency) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Status</span>
+              <span class="detail-value">
+                <AppBadge :variant="statusVariant(selectedAccount.status)">
+                  {{ statusLabel(selectedAccount.status) }}
+                </AppBadge>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Created</span>
+              <span class="detail-value">{{ selectedAccount.createdAt ? formatDate(selectedAccount.createdAt) : '–' }}</span>
+            </div>
+          </div>
+
+          <div class="limits-section">
+            <h3 class="limits-title">Limits</h3>
+            <div class="limits-grid">
+              <label class="input-group">
+                <span class="input-label">Absolute limit (€)</span>
+                <input
+                  v-model.number="limitForm.absoluteLimit"
+                  type="number"
+                  class="input-control"
+                  :disabled="selectedAccount.type === 'savings'"
+                  step="1"
+                />
+                <span v-if="selectedAccount.type === 'savings'" class="input-hint">Fixed at 0 for savings accounts</span>
+                <span v-else class="input-hint">Must be 0 or negative</span>
+              </label>
+              <label class="input-group">
+                <span class="input-label">Daily limit (€)</span>
+                <input
+                  v-model.number="limitForm.dailyLimit"
+                  type="number"
+                  class="input-control"
+                  step="1"
+                />
+                <span class="input-hint">Must be greater than 0</span>
+              </label>
+            </div>
+          </div>
+
+          <span v-if="detailError" class="input-error">{{ detailError }}</span>
+        </div>
+
+        <div class="modal-footer">
+          <AppButton
+            :variant="selectedAccount.status === 'active' ? 'danger' : 'secondary'"
+            :disabled="actionLoading"
+            @click="toggleStatus"
+          >
+            {{ selectedAccount.status === 'active' ? 'Close account' : 'Reopen account' }}
+          </AppButton>
+          <div class="modal-footer-right">
+            <AppButton variant="secondary" :disabled="actionLoading" @click="closeDetail">Cancel</AppButton>
+            <AppButton variant="primary" :disabled="actionLoading" @click="saveLimits">
+              {{ actionLoading ? 'Saving…' : 'Save limits' }}
+            </AppButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -322,8 +491,6 @@ onMounted(() => void loadAccounts())
 }
 
 .accounts-table-wrap {
-  /* Fixed height so ~10 rows are always visible and the table scrolls internally.
-     The footer (page nav) stays directly below this box and is always reachable. */
   height: 34rem;
   overflow: auto;
   border: 1px solid var(--color-border);
@@ -346,8 +513,16 @@ onMounted(() => void loadAccounts())
 .accounts-table th,
 .accounts-table td {
   white-space: nowrap;
-  /* Compact row padding so ~10 accounts fit in the visible area */
   padding: 0.6rem 1rem;
+}
+
+.account-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.account-row:hover {
+  background: var(--color-primary-soft, rgba(99, 102, 241, 0.07));
 }
 
 .account-cell {
@@ -395,6 +570,134 @@ onMounted(() => void loadAccounts())
 
 .table-footer span {
   color: var(--color-text-muted);
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--color-surface, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+  line-height: 1;
+}
+
+.modal-close:hover {
+  background: var(--color-border);
+}
+
+.modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.detail-value {
+  font-size: 0.92rem;
+}
+
+.detail-value.mono {
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}
+
+.limits-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.limits-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.limits-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.input-hint {
+  font-size: 0.73rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.modal-footer-right {
+  display: flex;
+  gap: 0.5rem;
 }
 
 @media (max-width: 1100px) {
