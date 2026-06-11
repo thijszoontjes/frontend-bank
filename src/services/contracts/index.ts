@@ -5,6 +5,7 @@ import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
 import type { CreateTransactionPayload, Transaction, TransactionListFilters, TransactionListResult } from '@/types/transaction'
 import type {
   EmployeeCreateCustomerPayload,
+  EmployeeCreateEmployeePayload,
   UserListFilters,
   UserListResult,
   UserProfile,
@@ -47,6 +48,7 @@ export interface UserManagementService {
   listUsers(page?: number, size?: number, filters?: UserListFilters): Promise<UserListResult>
   getUserById(userId: string): Promise<UserProfile>
   createCustomer(payload: EmployeeCreateCustomerPayload): Promise<UserProfile>
+  createEmployee(payload: EmployeeCreateEmployeePayload): Promise<UserProfile>
   updateUser(userId: string, payload: UserUpdatePayload): Promise<UserProfile>
   softDeleteUser(userId: string): Promise<void>
   blockUser(userId: string): Promise<UserProfile>

@@ -46,6 +46,15 @@ export interface EmployeeCreateCustomerPayload {
   savingsAccount: AccountConfigRequest
 }
 
+export interface EmployeeCreateEmployeePayload {
+  firstName: string
+  lastName: string
+  email: string
+  phoneNumber: string
+  password: string
+  bsn: string
+}
+
 export interface UserUpdatePayload {
   firstName?: string
   lastName?: string

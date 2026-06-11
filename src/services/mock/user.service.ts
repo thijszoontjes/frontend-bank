@@ -1,11 +1,28 @@
 import type { UserManagementService } from '@/services/contracts'
-import type { EmployeeCreateCustomerPayload, UserListFilters, UserProfile, UserUpdatePayload } from '@/types/user'
+import { SESSION_STORAGE_KEY } from '@/constants/auth'
+import type { AuthSession } from '@/types/auth'
+import type {
+  EmployeeCreateCustomerPayload,
+  EmployeeCreateEmployeePayload,
+  UserListFilters,
+  UserProfile,
+  UserUpdatePayload,
+} from '@/types/user'
+import { readStorage } from '@/utils/storage'
 
 import { mockDb } from './db'
 import { simulateDelay } from './shared'
 
 function findUser(userId: string) {
   return mockDb.users.find((entry) => entry.id === userId)
+}
+
+function requireEmployee() {
+  const session = readStorage<AuthSession>(SESSION_STORAGE_KEY)
+
+  if (session?.user.role !== 'employee') {
+    throw new Error('Employee role is required for this action')
+  }
 }
 
 function stripPassword(user: (typeof mockDb.users)[number]): UserProfile {
@@ -56,6 +73,8 @@ function createAccountRecord(
   absoluteLimit: number,
   dailyLimit: number,
 ) {
+  const timestamp = new Date().toISOString()
+
   return {
     id: `acc-${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     userId,
@@ -64,9 +83,9 @@ function createAccountRecord(
     type,
     currency: 'EUR',
     availableBalance: 0,
-    ledgerBalance: 0,
     status: 'active' as const,
-    updatedAt: new Date().toISOString(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
     absoluteLimit,
     dailyLimit,
   }
@@ -151,6 +170,44 @@ export function createMockUserManagementService(): UserManagementService {
           payload.savingsAccount.dailyLimit,
         ),
       )
+      sortUsers()
+
+      return stripPassword(user)
+    },
+    async createEmployee(payload: EmployeeCreateEmployeePayload) {
+      await simulateDelay(200)
+      requireEmployee()
+
+      const existingUser = mockDb.users.find(
+        (entry) =>
+          entry.email.toLowerCase() === payload.email.toLowerCase() || entry.bsn === buildMaskedBsn(payload.bsn),
+      )
+
+      if (existingUser) {
+        throw new Error('A user with this email address or BSN already exists.')
+      }
+
+      const user = {
+        id: `user-${Date.now()}`,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        phoneNumber: payload.phoneNumber,
+        bsn: buildMaskedBsn(payload.bsn),
+        password: payload.password,
+        role: 'employee' as const,
+        approvalStatus: 'approved' as const,
+        approved: true,
+        active: true,
+        blocked: false,
+        employeeCreated: true,
+        initials: `${payload.firstName[0] ?? ''}${payload.lastName[0] ?? ''}`.toUpperCase(),
+        createdAt: new Date().toISOString(),
+        blockedAt: null,
+        deletedAt: null,
+      }
+
+      mockDb.users.unshift(user)
       sortUsers()
 
       return stripPassword(user)

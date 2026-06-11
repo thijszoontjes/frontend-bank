@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -22,6 +22,7 @@ type ApprovalFilterValue = 'all' | 'pending' | 'approved' | 'rejected'
 const pageSize = 15
 
 const router = useRouter()
+const route = useRoute()
 const users = ref<UserProfile[]>([])
 const pagination = ref<PageMetadata | null>(null)
 const listLoading = ref(false)
@@ -35,6 +36,22 @@ const actionMessage = ref('')
 const activeAction = ref<string | null>(null)
 const isDetailModalOpen = ref(false)
 
+const createSuccessMessage = computed(() => {
+  if (route.query.created !== '1') {
+    return ''
+  }
+
+  const userName = typeof route.query.userName === 'string'
+    ? route.query.userName
+    : typeof route.query.customerName === 'string'
+      ? route.query.customerName
+      : 'User'
+
+  return route.query.createdRole === 'employee'
+    ? `${userName} has been created as an employee.`
+    : `${userName} has been created.`
+})
+
 const filters = reactive<{
   role: RoleFilterValue
   approvalStatus: ApprovalFilterValue
@@ -42,7 +59,7 @@ const filters = reactive<{
   employeeCreated: FilterValue
   includeDeleted: 'yes' | 'no'
 }>({
-  role: 'customer',
+  role: route.query.role === 'employee' ? 'employee' : 'customer',
   approvalStatus: 'all',
   blocked: 'all',
   employeeCreated: 'all',
@@ -372,6 +389,8 @@ onMounted(() => void loadUsers())
         <AppButton variant="secondary" @click="refreshCurrentPage()">Refresh</AppButton>
       </template>
     </PageHeader>
+
+    <p v-if="createSuccessMessage" class="success-banner" role="status">{{ createSuccessMessage }}</p>
 
     <AppCard title="User directory" :subtitle="pageSummary">
       <template #actions>
@@ -911,6 +930,16 @@ onMounted(() => void loadUsers())
 
 .success-message {
   color: var(--color-success);
+}
+
+.success-banner {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(29, 132, 92, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(29, 132, 92, 0.1);
+  color: var(--color-success);
+  font-weight: 700;
 }
 
 @media (max-width: 1100px) {

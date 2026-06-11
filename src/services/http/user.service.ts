@@ -76,6 +76,10 @@ export function createHttpUserManagementService(client: HttpClient): UserManagem
       const response = await client.post<ApprovalResponse>('/users', payload)
       return mapUser(response.user)
     },
+    async createEmployee(payload) {
+      const response = await client.post<BackendUserResponse>('/users/employees', payload)
+      return mapUser(response)
+    },
     async updateUser(userId, payload) {
       const response = await client.patch<BackendUserResponse>(`/users/${userId}`, payload)
       return mapUser(response)
@@ -84,11 +88,11 @@ export function createHttpUserManagementService(client: HttpClient): UserManagem
       await client.delete(`/users/${userId}`)
     },
     async blockUser(userId) {
-      const response = await client.post<BackendUserResponse>(`/users/${userId}/block`)
+      const response = await client.put<BackendUserResponse>(`/users/${userId}/block`)
       return mapUser(response)
     },
     async unblockUser(userId) {
-      const response = await client.post<BackendUserResponse>(`/users/${userId}/unblock`)
+      const response = await client.put<BackendUserResponse>(`/users/${userId}/unblock`)
       return mapUser(response)
     },
   }

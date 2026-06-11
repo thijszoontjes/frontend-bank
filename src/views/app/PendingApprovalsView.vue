@@ -106,6 +106,7 @@ async function handleApprove() {
     return
   }
 
+  const reviewedUserId = selectedUser.value.id
   const payload = buildPayload()
 
   if (!payload) {
@@ -116,10 +117,10 @@ async function handleApprove() {
   actionError.value = ''
 
   try {
-    await approvalStore.approve(selectedUser.value.id, payload)
-    actionMessage.value = 'Customer approved.'
+    await approvalStore.approve(reviewedUserId, payload)
     await loadApprovals()
-    await loadUserDetail(selectedUser.value.id)
+    await loadUserDetail(reviewedUserId)
+    actionMessage.value = 'Customer approved.'
   } catch (caughtError) {
     actionError.value = toErrorMessage(caughtError)
   } finally {
@@ -132,14 +133,15 @@ async function handleReject() {
     return
   }
 
+  const reviewedUserId = selectedUser.value.id
   activeAction.value = 'reject'
   actionError.value = ''
 
   try {
-    await approvalStore.reject(selectedUser.value.id)
-    actionMessage.value = 'Registration rejected.'
+    await approvalStore.reject(reviewedUserId)
     await loadApprovals()
-    await loadUserDetail(selectedUser.value.id)
+    await loadUserDetail(reviewedUserId)
+    actionMessage.value = 'Registration rejected.'
   } catch (caughtError) {
     actionError.value = toErrorMessage(caughtError)
   } finally {
@@ -273,7 +275,7 @@ onMounted(() => void loadApprovals())
           </template>
 
           <template #actions>
-            <div class="button-group" v-if="selectedUser">
+            <div class="button-group" v-if="selectedUser?.approvalStatus === 'pending'">
               <AppButton :disabled="activeAction === 'approve'" @click="handleApprove()">
                 {{ activeAction === 'approve' ? 'Approving...' : 'Approve' }}
               </AppButton>
