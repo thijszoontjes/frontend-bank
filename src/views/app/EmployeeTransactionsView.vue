@@ -10,7 +10,7 @@ import LoadingState from '@/components/ui/LoadingState.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { services } from '@/services'
 import type { PageMetadata } from '@/types/common'
-import type { Transaction, TransactionListFilters } from '@/types/transaction'
+import type { AmountComparisonOperator, Transaction, TransactionListFilters } from '@/types/transaction'
 import { formatCurrency, formatDateTime, toErrorMessage } from '@/utils/format'
 
 const pageSize = 25
@@ -26,17 +26,25 @@ const filters = reactive<{
   search: string
   startDate: string
   endDate: string
+  amountOperator: 'none' | AmountComparisonOperator
+  amountValue: number | ''
 }>({
   search: '',
   startDate: '',
   endDate: '',
+  amountOperator: 'none',
+  amountValue: '',
 })
 
 function buildFilters(): TransactionListFilters {
+  const hasAmount = filters.amountOperator !== 'none' && filters.amountValue !== ''
+
   return {
     search: filters.search.trim() || undefined,
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
+    amountOperator: hasAmount ? (filters.amountOperator as AmountComparisonOperator) : undefined,
+    amountValue: hasAmount ? (filters.amountValue as number) : undefined,
   }
 }
 
@@ -142,22 +150,32 @@ onMounted(() => void loadTransactions())
       </template>
 
       <div class="directory-filters">
+        <AppInput
+          v-model="filters.search"
+          type="text"
+          label="Search"
+          placeholder="Transaction ID, IBAN, description..."
+        />
+        <AppInput v-model="filters.startDate" type="date" label="Start Date" />
+        <AppInput v-model="filters.endDate" type="date" label="End Date" />
         <label class="input-group">
-          <span class="input-label">Search</span>
-          <AppInput
-            v-model="filters.search"
-            type="text"
-            label="Search"
-            placeholder="Transaction ID, IBAN, description..."
+          <span class="input-label">Amount</span>
+          <select v-model="filters.amountOperator" class="input-control">
+            <option value="none">No filter</option>
+            <option value="gt">More than</option>
+            <option value="eq">Equal to</option>
+            <option value="lt">Less than</option>
+          </select>
+        </label>
+        <label class="input-group" :class="{ 'input-group--disabled': filters.amountOperator === 'none' }">
+          <span class="input-label">Amount (€)</span>
+          <input
+            v-model="filters.amountValue"
+            type="number"
+            placeholder="0.00"
+            class="input-control"
+            :disabled="filters.amountOperator === 'none'"
           />
-        </label>
-        <label class="input-group">
-          <span class="input-label">Start Date</span>
-          <AppInput v-model="filters.startDate" type="date" label="Start Date" />
-        </label>
-        <label class="input-group">
-          <span class="input-label">End Date</span>
-          <AppInput v-model="filters.endDate" type="date" label="End Date" />
         </label>
       </div>
 
@@ -291,9 +309,19 @@ onMounted(() => void loadTransactions())
 
 .directory-filters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.85rem;
   margin-bottom: 1rem;
+}
+
+.input-group--disabled .input-label {
+  opacity: 0.45;
+}
+
+@media (max-width: 1100px) {
+  .directory-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .directory-error {

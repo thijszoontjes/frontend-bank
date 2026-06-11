@@ -26,20 +26,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  async function loadByAccount(iban: string) {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      transactions.value = await services.transaction.getTransactionsByAccount(iban)
-    } catch (caughtError) {
-      error.value = toErrorMessage(caughtError)
-      throw caughtError
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   function add(transaction: Transaction) {
     transactions.value.unshift(transaction)
   }
@@ -55,7 +41,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     isLoading,
     error,
     load,
-    loadByAccount,
     add,
     clear,
   }

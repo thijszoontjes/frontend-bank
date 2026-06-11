@@ -100,21 +100,107 @@ export function createMockTransactionService(): TransactionService {
         },
       }
     },
+    async listTransactionsByAccount(iban: string, page = 0, size = 25, filters = {}) {
+      await simulateDelay()
+
+      let filtered = mockDb.transactions.filter(
+        (t) => t.fromAccount === iban || t.toAccount === iban,
+      )
+
+      if (filters.search) {
+        const search = filters.search.toLowerCase()
+        filtered = filtered.filter(
+          (t) =>
+            t.fromAccount.toLowerCase().includes(search) ||
+            t.toAccount.toLowerCase().includes(search),
+        )
+      }
+
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate)
+        filtered = filtered.filter((t) => new Date(t.createdAt) >= startDate)
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate)
+        endDate.setHours(23, 59, 59, 999)
+        filtered = filtered.filter((t) => new Date(t.createdAt) <= endDate)
+      }
+
+      if (filters.amountOperator && filters.amountValue !== undefined) {
+        const val = Number(filters.amountValue)
+        filtered = filtered.filter((t) => {
+          if (filters.amountOperator === 'gt') return t.amount > val
+          if (filters.amountOperator === 'eq') return t.amount === val
+          if (filters.amountOperator === 'lt') return t.amount < val
+          return true
+        })
+      }
+
+      filtered.sort((a, b) => b.transactionId - a.transactionId)
+
+      const totalElements = filtered.length
+      const totalPages = Math.ceil(totalElements / size) || 1
+      const start = page * size
+      const items = filtered.slice(start, start + size)
+
+      return {
+        items,
+        page: { page, size, totalElements, totalPages },
+      }
+    },
+    async listTransactionsByUser(userId: string, page = 0, size = 25, filters = {}) {
+      await simulateDelay()
+
+      let filtered = mockDb.transactions.filter((t) => transactionBelongsToUser(t, userId))
+
+      if (filters.search) {
+        const search = filters.search.toLowerCase()
+        filtered = filtered.filter(
+          (t) =>
+            t.fromAccount.toLowerCase().includes(search) ||
+            t.toAccount.toLowerCase().includes(search),
+        )
+      }
+
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate)
+        filtered = filtered.filter((t) => new Date(t.createdAt) >= startDate)
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate)
+        endDate.setHours(23, 59, 59, 999)
+        filtered = filtered.filter((t) => new Date(t.createdAt) <= endDate)
+      }
+
+      if (filters.amountOperator && filters.amountValue !== undefined) {
+        const val = Number(filters.amountValue)
+        filtered = filtered.filter((t) => {
+          if (filters.amountOperator === 'gt') return t.amount > val
+          if (filters.amountOperator === 'eq') return t.amount === val
+          if (filters.amountOperator === 'lt') return t.amount < val
+          return true
+        })
+      }
+
+      filtered.sort((a, b) => b.transactionId - a.transactionId)
+
+      const totalElements = filtered.length
+      const totalPages = Math.ceil(totalElements / size) || 1
+      const start = page * size
+      const items = filtered.slice(start, start + size)
+
+      return {
+        items,
+        page: { page, size, totalElements, totalPages },
+      }
+    },
     async getTransactionsByUser(userId: string) {
       await simulateDelay()
 
       return mockDb.transactions
         .filter((transaction) => transactionBelongsToUser(transaction, userId))
-        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-    },
-    async getTransactionsByAccount(iban: string) {
-      await simulateDelay()
-
-      return mockDb.transactions
-        .filter(
-          (transaction) =>
-            transaction.fromAccount === iban || transaction.toAccount === iban,
-        )
         .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     },
     async createTransaction(payload: CreateTransactionPayload) {

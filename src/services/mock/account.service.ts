@@ -1,5 +1,5 @@
 import type { AccountService } from '@/services/contracts'
-import type { AccountListFilters, AccountListResult, BankAccount } from '@/types/account'
+import type { AccountListFilters, AccountListResult, BankAccount, IbanSearchResult } from '@/types/account'
 
 import { mockDb } from './db'
 import { simulateDelay } from './shared'
@@ -85,6 +85,26 @@ export function createMockAccountService(): AccountService {
           totalPages,
         },
       }
+    },
+
+    async searchIbanByName(firstName, lastName): Promise<IbanSearchResult[]> {
+      await simulateDelay(150)
+      const first = firstName.trim().toLowerCase()
+      const last = lastName.trim().toLowerCase()
+
+      return mockDb.users
+        .filter(
+          (u) =>
+            u.role === 'customer' &&
+            u.firstName.toLowerCase() === first &&
+            u.lastName.toLowerCase() === last &&
+            !u.deletedAt,
+        )
+        .flatMap((u) =>
+          mockDb.accounts
+            .filter((a) => a.userId === u.id && a.type === 'checking' && a.status === 'active')
+            .map((a) => ({ iban: a.iban, ownerName: `${u.firstName} ${u.lastName}` })),
+        )
     },
   }
 }

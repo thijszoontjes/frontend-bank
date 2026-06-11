@@ -22,10 +22,14 @@ export interface Transaction {
   status?: TransactionStatus
 }
 
+export type AmountComparisonOperator = 'gt' | 'eq' | 'lt'
+
 export interface TransactionListFilters {
   search?: string
   startDate?: string
   endDate?: string
+  amountOperator?: AmountComparisonOperator
+  amountValue?: number
 }
 
 export interface TransactionListResult {

@@ -3,7 +3,7 @@ import type { AccountService } from '@/services/contracts'
 import { mapAccountPortfolio } from '@/services/http/account.mapper'
 import type { BackendAccountPortfolioResponse } from '@/services/http/account.mapper'
 import type { PageMetadata } from '@/types/common'
-import type { AccountListFilters, AccountListResult, BankAccount } from '@/types/account'
+import type { AccountListFilters, AccountListResult, BankAccount, IbanSearchResult } from '@/types/account'
 
 interface BackendAccountResponse {
   iban: string
@@ -82,6 +82,11 @@ export function createHttpAccountService(client: HttpClient): AccountService {
         items: (response.items ?? []).map(mapAccount),
         page: response.page,
       }
+    },
+
+    async searchIbanByName(firstName, lastName): Promise<IbanSearchResult[]> {
+      const params = new URLSearchParams({ firstName, lastName })
+      return client.get<IbanSearchResult[]>(`/accounts/search?${params.toString()}`)
     },
   }
 }

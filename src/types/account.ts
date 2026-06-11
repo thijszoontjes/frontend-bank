@@ -41,3 +41,8 @@ export interface AccountPortfolio {
   accounts: BankAccount[]
   summary: AccountSummary
 }
+
+export interface IbanSearchResult {
+  iban: string
+  ownerName: string
+}

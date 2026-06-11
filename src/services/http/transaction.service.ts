@@ -14,7 +14,7 @@ interface PagedTransactionsResponse {
 
 function buildTransactionQuery(page: number, size: number, sortBy: string, sortDir: string, filters: TransactionListFilters = {}) {
   const params = new URLSearchParams({
-    pageNr: String(page + 1), // Backend expects 1-based page numbers
+    pageNr: String(page),
     pageSize: String(size),
     sortBy,
     sortDir,
@@ -32,6 +32,11 @@ function buildTransactionQuery(page: number, size: number, sortBy: string, sortD
     params.set('endDate', filters.endDate)
   }
 
+  if (filters.amountOperator && filters.amountValue !== undefined) {
+    params.set('amountOperator', filters.amountOperator)
+    params.set('amountValue', String(filters.amountValue))
+  }
+
   return params.toString()
 }
 
@@ -43,7 +48,63 @@ export function createHttpTransactionService(client: HttpClient): TransactionSer
       return {
         items: response.items,
         page: {
-          page: response.page.page - 1, // Convert back to 0-based for frontend
+          page: response.page.page,
+          size: response.page.size,
+          totalElements: response.page.totalElements,
+          totalPages: response.page.totalPages,
+        },
+      }
+    },
+    async listTransactionsByAccount(iban, page = 0, size = 25, filters = {}) {
+      const params = new URLSearchParams({
+        pageNr: String(page + 1), // This endpoint uses 1-based pageNr (defaultValue="1", does pageNr-1 internally)
+        pageSize: String(size),
+        sortBy: 'transactionId',
+        sortDir: 'DESC',
+      })
+
+      if (filters.search) params.set('search', filters.search)
+      if (filters.startDate) params.set('startDate', filters.startDate)
+      if (filters.endDate) params.set('endDate', filters.endDate)
+      if (filters.amountOperator && filters.amountValue !== undefined) {
+        params.set('amountOperator', filters.amountOperator)
+        params.set('amountValue', String(filters.amountValue))
+      }
+
+      const response = await client.get<PagedTransactionsResponse>(`/accounts/${iban}/transactions?${params.toString()}`)
+
+      return {
+        items: response.items,
+        page: {
+          page: response.page.page,
+          size: response.page.size,
+          totalElements: response.page.totalElements,
+          totalPages: response.page.totalPages,
+        },
+      }
+    },
+    async listTransactionsByUser(userId, page = 0, size = 25, filters = {}) {
+      const params = new URLSearchParams({
+        pageNr: String(page + 1), // This endpoint uses 1-based pageNr (defaultValue="1", does pageNr-1 internally)
+        pageSize: String(size),
+        sortBy: 'transactionId',
+        sortDir: 'DESC',
+      })
+
+      if (filters.search) params.set('search', filters.search)
+      if (filters.startDate) params.set('startDate', filters.startDate)
+      if (filters.endDate) params.set('endDate', filters.endDate)
+      if (filters.amountOperator && filters.amountValue !== undefined) {
+        params.set('amountOperator', filters.amountOperator)
+        params.set('amountValue', String(filters.amountValue))
+      }
+
+      const response = await client.get<PagedTransactionsResponse>(`/users/${userId}/transactions?${params.toString()}`)
+
+      return {
+        items: response.items,
+        page: {
+          page: response.page.page,
           size: response.page.size,
           totalElements: response.page.totalElements,
           totalPages: response.page.totalPages,
@@ -52,10 +113,6 @@ export function createHttpTransactionService(client: HttpClient): TransactionSer
     },
     async getTransactionsByUser(userId) {
       const response = await client.get<PagedTransactionsResponse>(`/users/${userId}/transactions`)
-      return response.items
-    },
-    async getTransactionsByAccount(iban) {
-      const response = await client.get<PagedTransactionsResponse>(`/accounts/${iban}/transactions`)
       return response.items
     },
     createTransaction: (payload) => client.post<Transaction>('/transactions', payload),

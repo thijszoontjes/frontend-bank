@@ -1,5 +1,5 @@
 import type { ApprovalListResult, ApprovalPayload } from '@/types/approval'
-import type { AccountListFilters, AccountListResult, AccountPortfolio } from '@/types/account'
+import type { AccountListFilters, AccountListResult, AccountPortfolio, IbanSearchResult } from '@/types/account'
 import type { AtmDepositPayload, AtmTransactionResult, AtmWithdrawPayload } from '@/types/atm'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
 import type { CreateTransactionPayload, Transaction, TransactionListFilters, TransactionListResult } from '@/types/transaction'
@@ -22,6 +22,7 @@ export interface AuthService {
 export interface AccountService {
   getAccountPortfolio(userId: string): Promise<AccountPortfolio>
   listAllAccounts(page?: number, size?: number, filters?: AccountListFilters): Promise<AccountListResult>
+  searchIbanByName(firstName: string, lastName: string): Promise<IbanSearchResult[]>
 }
 
 export interface AtmService {
@@ -31,8 +32,9 @@ export interface AtmService {
 
 export interface TransactionService {
   listTransactions(page?: number, size?: number, sortBy?: string, sortDir?: string, filters?: TransactionListFilters): Promise<TransactionListResult>
+  listTransactionsByAccount(iban: string, page?: number, size?: number, filters?: TransactionListFilters): Promise<TransactionListResult>
+  listTransactionsByUser(userId: string, page?: number, size?: number, filters?: TransactionListFilters): Promise<TransactionListResult>
   getTransactionsByUser(userId: string): Promise<Transaction[]>
-  getTransactionsByAccount(iban: string): Promise<Transaction[]>
   createTransaction(payload: CreateTransactionPayload): Promise<Transaction>
 }
 

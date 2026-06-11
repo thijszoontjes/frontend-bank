@@ -15,6 +15,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  defaultToIban: {
+    type: String,
+    default: '',
+  },
   submitLabel: {
     type: String,
     default: 'Send transfer',
@@ -30,7 +34,7 @@ const emit = defineEmits<{
 }>()
 
 const fromAccountIban = ref(props.defaultFromIban || props.accounts[0]?.iban || '')
-const toAccountIban = ref('')
+const toAccountIban = ref(props.defaultToIban || '')
 const amount = ref('')
 const description = ref('')
 const error = ref('')
@@ -38,9 +42,14 @@ const error = ref('')
 watch(
   () => props.defaultFromIban,
   (value) => {
-    if (value) {
-      fromAccountIban.value = value
-    }
+    if (value) fromAccountIban.value = value
+  },
+)
+
+watch(
+  () => props.defaultToIban,
+  (value) => {
+    if (value) toAccountIban.value = value
   },
 )
 
