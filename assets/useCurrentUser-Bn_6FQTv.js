@@ -1,0 +1,1 @@
+import{N as s,h as r}from"./index-BVQMu8At.js";function o(){const e=s();return{user:r(()=>e.user),userId:r(()=>{var t;return((t=e.user)==null?void 0:t.id)??""}),isAuthenticated:r(()=>e.isAuthenticated),role:r(()=>e.role),isEmployee:r(()=>e.role==="employee"),isPendingCustomer:r(()=>e.isPendingCustomer)}}export{o as u};
