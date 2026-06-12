@@ -28,6 +28,7 @@ export interface BankAccount {
   updatedAt?: string
   absoluteLimit?: number
   dailyLimit?: number
+  ownerName?: string
 }
 
 export interface AccountSummary {

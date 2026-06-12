@@ -106,5 +106,29 @@ export function createMockAccountService(): AccountService {
             .map((a) => ({ iban: a.iban, ownerName: `${u.firstName} ${u.lastName}` })),
         )
     },
+
+    async getAccountByIban(iban: string): Promise<BankAccount> {
+      await simulateDelay(120)
+      const account = mockDb.accounts.find((a) => a.iban === iban)
+      if (!account) throw new Error(`Account ${iban} not found`)
+      return { ...account }
+    },
+
+    async updateAccountStatus(iban: string): Promise<BankAccount> {
+      await simulateDelay(150)
+      const account = mockDb.accounts.find((a) => a.iban === iban)
+      if (!account) throw new Error(`Account ${iban} not found`)
+      account.status = account.status === 'active' ? 'blocked' : 'active'
+      return { ...account }
+    },
+
+    async updateAccountLimits(iban: string, absoluteLimit: number, dailyLimit: number): Promise<BankAccount> {
+      await simulateDelay(150)
+      const account = mockDb.accounts.find((a) => a.iban === iban)
+      if (!account) throw new Error(`Account ${iban} not found`)
+      account.absoluteLimit = absoluteLimit
+      account.dailyLimit = dailyLimit
+      return { ...account }
+    },
   }
 }

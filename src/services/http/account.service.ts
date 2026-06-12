@@ -14,6 +14,7 @@ interface BackendAccountResponse {
   dailyLimit: number
   createdAt: string
   userId: number
+  ownerName?: string
 }
 
 interface PagedAccountsResponse {
@@ -40,6 +41,7 @@ function mapAccount(a: BackendAccountResponse): BankAccount {
     createdAt: a.createdAt,
     absoluteLimit: a.absoluteLimit,
     dailyLimit: a.dailyLimit,
+    ownerName: a.ownerName,
   }
 }
 
@@ -52,8 +54,8 @@ export function createHttpAccountService(client: HttpClient): AccountService {
 
     async listAllAccounts(page = 0, size = 25, filters: AccountListFilters = {}): Promise<AccountListResult> {
       const params = new URLSearchParams({
-        page: String(page),
-        size: String(size),
+        pageNr: String(page),
+        pageSize: String(size),
       })
 
       if (filters.type) {
@@ -87,6 +89,24 @@ export function createHttpAccountService(client: HttpClient): AccountService {
     async searchIbanByName(firstName, lastName): Promise<IbanSearchResult[]> {
       const params = new URLSearchParams({ firstName, lastName })
       return client.get<IbanSearchResult[]>(`/accounts/search?${params.toString()}`)
+    },
+
+    async getAccountByIban(iban: string): Promise<BankAccount> {
+      const response = await client.get<BackendAccountResponse>(`/accounts/${iban}`)
+      return mapAccount(response)
+    },
+
+    async updateAccountStatus(iban: string): Promise<BankAccount> {
+      const response = await client.put<BackendAccountResponse>(`/accounts/${iban}/status`)
+      return mapAccount(response)
+    },
+
+    async updateAccountLimits(iban: string, absoluteLimit: number, dailyLimit: number): Promise<BankAccount> {
+      const response = await client.put<BackendAccountResponse>(`/accounts/${iban}/limits`, {
+        absoluteLimit,
+        dailyLimit,
+      })
+      return mapAccount(response)
     },
   }
 }

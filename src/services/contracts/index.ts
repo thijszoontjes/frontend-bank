@@ -1,5 +1,5 @@
 import type { ApprovalListResult, ApprovalPayload } from '@/types/approval'
-import type { AccountListFilters, AccountListResult, AccountPortfolio, IbanSearchResult } from '@/types/account'
+import type { AccountListFilters, AccountListResult, AccountPortfolio, BankAccount, IbanSearchResult } from '@/types/account'
 import type { AtmDepositPayload, AtmTransactionResult, AtmWithdrawPayload } from '@/types/atm'
 import type { AuthSession, LoginPayload, RegisterPayload } from '@/types/auth'
 import type { CreateTransactionPayload, Transaction, TransactionListFilters, TransactionListResult } from '@/types/transaction'
@@ -23,6 +23,9 @@ export interface AccountService {
   getAccountPortfolio(userId: string): Promise<AccountPortfolio>
   listAllAccounts(page?: number, size?: number, filters?: AccountListFilters): Promise<AccountListResult>
   searchIbanByName(firstName: string, lastName: string): Promise<IbanSearchResult[]>
+  getAccountByIban(iban: string): Promise<BankAccount>
+  updateAccountStatus(iban: string): Promise<BankAccount>
+  updateAccountLimits(iban: string, absoluteLimit: number, dailyLimit: number): Promise<BankAccount>
 }
 
 export interface AtmService {
